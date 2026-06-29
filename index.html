@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Host Schedule</title>
+  <title>Live Host Schedule (Synced)</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -17,9 +17,9 @@
     .header { text-align: center; margin-bottom: 32px; }
     .live-badge {
       display: inline-block; background: #FF4D6D;
-      color: #fff; fontSize: 11px; font-weight: 700;
+      color: #fff; font-size: 11px; font-weight: 700;
       letter-spacing: 3px; padding: 4px 12px; border-radius: 2px;
-      margin-bottom: 12px; font-size: 11px;
+      margin-bottom: 12px;
     }
     .title { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 1px; color: #F0F0F5; }
     .subtitle { margin: 6px 0 0; color: #666; font-size: 13px; letter-spacing: 1px; }
@@ -64,7 +64,7 @@
     .today-badge { position: absolute; top: 8px; right: 10px; font-size: 9px; color: #FFD700; font-weight: 700; letter-spacing: 1px; }
     .card-day { font-size: 11px; font-weight: 700; color: #888; letter-spacing: 2px; margin-bottom: 6px; }
     .card-date { font-size: 20px; font-weight: 800; color: #F0F0F5; margin-bottom: 12px; }
-    .card-month { font-size: 13px; font-weight: 500; color: #666; margin-dash: 4px; }
+    .card-month { font-size: 13px; font-weight: 500; color: #666; margin-left: 4px; }
     .card-assign { font-size: 13px; font-weight: 700; padding-top: 10px; }
     
     .footer { text-align: center; color: #333; font-size: 11px; margin-top: 32px; }
@@ -99,22 +99,35 @@
 
   <div id="schedule-grid" class="grid"></div>
 
-  <p class="footer">Click any day to assign host · Each date is independent</p>
+  <p class="footer">Click any day to assign host · Changes sync globally instantly</p>
 
-  <script>
-    // Configuration & State
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Injecting your configuration parameters directly
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQ9hs030NaJy2NoznP1bCSNa-eIRs4Kkg",
+      authDomain: "liveschedule-f6036.firebaseapp.com",
+      databaseURL: "https://liveschedule-f6036-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "liveschedule-f6036",
+      storageBucket: "liveschedule-f6036.firebasestorage.app",
+      messagingSenderId: "424904123728",
+      appId: "1:424904123728:web:3d2213361a78b2147b3855"
+    };
+
+    // Initialize Firebase Setup
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const scheduleRef = ref(db, "live-schedule-config");
+
+    // Local UI Application State
     const DAY_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI"];
     const DAY_INDICES = [0, 1, 2, 3, 4, 5];
     const HOST_COLORS = {
       A: { bg: "#7B61FF", light: "rgba(123,97,255,0.15)", border: "rgba(123,97,255,0.4)" },
       B: { bg: "#FF4D6D", light: "rgba(255,77,109,0.15)", border: "rgba(255,77,109,0.4)" },
       none: { bg: "#2A2A3E", light: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)" },
-    };
-
-    // Storage Polyfill (Uses standard localStorage if window.storage isn't present)
-    const storage = window.storage || {
-      get: async (key) => ({ value: localStorage.getItem(key) }),
-      set: async (key, val) => localStorage.setItem(key, val)
     };
 
     let state = {
@@ -125,12 +138,9 @@
       editMode: false
     };
 
-    // Date Utilities
+    // Local Date Helper Logic
     function toDateKey(date) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     }
 
     function getWeekDates(offsetWeeks) {
@@ -148,43 +158,41 @@
       return toDateKey(date) === toDateKey(new Date());
     }
 
-    // Storage Handling
-    async function loadData() {
+    // Push local UI data changes to Firebase Realtime Cloud
+    async function syncToFirebase() {
       try {
-        const r = await storage.get("live-schedule-config", true);
-        if (r && r.value) {
-          const d = JSON.parse(r.value);
-          if (d.hostA) state.hostA = d.hostA;
-          if (d.hostB) state.hostB = d.hostB;
-          if (d.assignments) state.assignments = d.assignments;
-        }
-      } catch (_) {}
+        await set(scheduleRef, {
+          hostA: state.hostA,
+          hostB: state.hostB,
+          assignments: state.assignments || {}
+        });
+      } catch (err) {
+        console.error("Firebase database communication error:", err);
+      }
+    }
+
+    // Subscribe to Firebase data changes for Realtime global rendering
+    onValue(scheduleRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        state.hostA = data.hostA || "Host A";
+        state.hostB = data.hostB || "Host B";
+        state.assignments = data.assignments || {};
+      }
       render();
-    }
+    });
 
-    async function saveData() {
-      try {
-        await storage.set("live-schedule-config", JSON.stringify({
-          hostA: state.hostA, hostB: state.hostB, assignments: state.assignments,
-        }), true);
-      } catch (_) {}
-    }
-
-    // Actions
     function cycleAssignment(dateKey) {
       const cur = state.assignments[dateKey] || "none";
-      const next = cur === "none" ? "A" : cur === "A" ? "B" : "none";
-      state.assignments[dateKey] = next;
-      saveData();
-      render();
+      state.assignments[dateKey] = cur === "none" ? "A" : cur === "A" ? "B" : "none";
+      syncToFirebase();
     }
 
-    // UI Render Engine
+    // Dynamic Client Render Cycle Engine
     function render() {
       const colorA = HOST_COLORS.A;
       const colorB = HOST_COLORS.B;
 
-      // Render Legend Pills
       const pillA = document.getElementById("pill-A");
       const pillB = document.getElementById("pill-B");
       pillA.style.background = colorA.light; pillA.style.border = `1px solid ${colorA.border}`;
@@ -197,9 +205,8 @@
         displayA.innerHTML = `<input id="input-A" class="host-input" style="border-bottom: 1px solid ${colorA.bg}" value="${state.hostA}">`;
         displayB.innerHTML = `<input id="input-B" class="host-input" style="border-bottom: 1px solid ${colorB.bg}" value="${state.hostB}">`;
         
-        // Attach input events
-        document.getElementById("input-A").addEventListener("input", (e) => { state.hostA = e.target.value; saveData(); });
-        document.getElementById("input-B").addEventListener("input", (e) => { state.hostB = e.target.value; saveData(); });
+        document.getElementById("input-A").addEventListener("input", (e) => { state.hostA = e.target.value; syncToFirebase(); });
+        document.getElementById("input-B").addEventListener("input", (e) => { state.hostB = e.target.value; syncToFirebase(); });
       } else {
         displayA.textContent = state.hostA;
         displayB.textContent = state.hostB;
@@ -209,15 +216,10 @@
       editBtn.textContent = state.editMode ? "Done" : "Edit Names";
       editBtn.className = state.editMode ? "btn btn-edit-active" : "btn";
 
-      // Render Navigation
       const weekDates = getWeekDates(state.weekOffset);
-      const s = weekDates[0];
-      const e = weekDates[5];
-      document.getElementById("week-label").textContent = `${s.toLocaleDateString("en-MY", { day: "2-digit", month: "short" })} – ${e.toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}`;
-      
+      document.getElementById("week-label").textContent = `${weekDates[0].toLocaleDateString("en-MY", { day: "2-digit", month: "short" })} – ${weekDates[5].toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}`;
       document.getElementById("today-btn").style.display = state.weekOffset !== 0 ? "inline-block" : "none";
 
-      // Render Schedule Grid
       const grid = document.getElementById("schedule-grid");
       grid.innerHTML = "";
 
@@ -230,7 +232,6 @@
 
         const card = document.createElement("div");
         card.className = "card";
-        card.title = "Click to assign host";
         card.style.background = c.light;
         card.style.border = `1px solid ${today ? "#FFD700" : c.border}`;
         card.style.boxShadow = today ? "0 0 0 2px rgba(255,215,0,0.3)" : "none";
@@ -251,17 +252,11 @@
       });
     }
 
-    // Setup Event Listeners
-    document.getElementById("edit-btn").addEventListener("click", () => {
-      state.editMode = !state.editMode;
-      render();
-    });
+    // Static Layout Navigation DOM Attachments
+    document.getElementById("edit-btn").addEventListener("click", () => { state.editMode = !state.editMode; render(); });
     document.getElementById("prev-btn").addEventListener("click", () => { state.weekOffset--; render(); });
     document.getElementById("next-btn").addEventListener("click", () => { state.weekOffset++; render(); });
     document.getElementById("today-btn").addEventListener("click", () => { state.weekOffset = 0; render(); });
-
-    // Initialization
-    loadData();
   </script>
 </body>
 </html>
