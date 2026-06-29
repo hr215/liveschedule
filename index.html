@@ -34,7 +34,6 @@
       margin: 0 auto;
     }
 
-    /* Header Styling */
     .header {
       text-align: center;
       margin-bottom: 32px;
@@ -66,7 +65,6 @@
       letter-spacing: 1px;
     }
 
-    /* Legend / Controls Area */
     .controls {
       display: flex;
       align-items: center;
@@ -131,7 +129,6 @@
       border-color: var(--host-a-bg);
     }
 
-    /* Navigation */
     .nav-container {
       display: flex;
       align-items: center;
@@ -166,7 +163,6 @@
       text-align: center;
     }
 
-    /* Cards Grid Layout */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -249,7 +245,7 @@
       <p class="subtitle">11:00 PM – 12:00 AM</p>
     </header>
 
-    <!-- Legend + Configurations -->
+    <!-- Settings Controls -->
     <section class="controls" aria-label="Schedule settings">
       <div class="host-pill a">
         <div class="dot a"></div>
@@ -262,7 +258,7 @@
       <button class="btn" id="edit-btn" onclick="toggleEditMode()">Edit Names</button>
     </section>
 
-    <!-- Week Navigation -->
+    <!-- Week Nav -->
     <nav class="nav-container" aria-label="Week navigation">
       <button class="nav-btn" onclick="changeWeek(-1)" aria-label="Previous week">‹</button>
       <span class="week-label" id="week-label"></span>
@@ -270,49 +266,52 @@
       <button class="nav-btn today-btn" id="today-btn" style="display: none;" onclick="resetWeek()">Today</button>
     </nav>
 
-    <!-- Schedule Grid -->
+    <!-- Schedule Cards Grid -->
     <main class="grid" id="schedule-grid" aria-label="Weekly assignments"></main>
 
     <footer class="footer-note">
-      Click any day card to cycle through assigned hosts. Updates save automatically.
+      Click any day card to cycle through assigned hosts for that specific date. Changes save automatically.
     </footer>
   </div>
 
   <script>
-    const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     const DAY_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI"];
     const DAY_INDICES = [0, 1, 2, 3, 4, 5];
 
-    // Core States
+    // Core application memory 
     let hostA = "Host A";
     let hostB = "Host B";
-    let assignments = {
-      Sunday: "A", Monday: "B", Tuesday: "A",
-      Wednesday: "B", Thursday: "A", Friday: "B",
-    };
+    let assignments = {}; // Maps dynamic calendar date keys (YYYY-MM-DD) -> 'A', 'B', or 'none'
     let weekOffset = 0;
     let editMode = false;
 
-    // Initialize data from local storage tracking
+    // Helper to extract a safe date string key format: YYYY-MM-DD
+    function getDateKey(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
     function init() {
       try {
-        const stored = localStorage.getItem("live-schedule-config");
+        const stored = localStorage.getItem("live-schedule-config-v2");
         if (stored) {
           const parsed = JSON.parse(stored);
           if (parsed.hostA) hostA = parsed.hostA;
-          if (parsed.hostB) hostB = parsed.hostB;
+          if (parsed.hostB) parsed.hostB ? hostB = parsed.hostB : null;
           if (parsed.assignments) assignments = parsed.assignments;
         }
-      } catch (e) { console.error("Could not fetch storage context data", e); }
+      } catch (e) { console.error("Storage error", e); }
       render();
     }
 
     function save() {
       try {
-        localStorage.setItem("live-schedule-config", JSON.stringify({
+        localStorage.setItem("live-schedule-config-v2", JSON.stringify({
           hostA, hostB, assignments
         }));
-      } catch (e) { console.error("Could not write layout configurations", e); }
+      } catch (e) { console.error("Write storage error", e); }
     }
 
     function getWeekDates(offset) {
@@ -349,15 +348,14 @@
     function updateHostName(key, value) {
       if (key === 'A') hostA = value;
       if (key === 'B') hostB = value;
-      // Re-render elements without breaking user cursor inputs Focus
       save();
       renderGridOnly();
     }
 
-    function cycleAssignment(day) {
-      const current = assignments[day] || "none";
+    function cycleAssignment(dateKey) {
+      const current = assignments[dateKey] || "none";
       const next = current === "A" ? "B" : current === "B" ? "none" : "A";
-      assignments[day] = next;
+      assignments[dateKey] = next;
       save();
       renderGridOnly();
     }
@@ -372,15 +370,15 @@
       render();
     }
 
-    // Secondary UI update to avoid losing typing input focus states
     function renderGridOnly() {
       const weekDates = getWeekDates(weekOffset);
       const grid = document.getElementById("schedule-grid");
       grid.innerHTML = "";
 
-      DAYS.forEach((day, i) => {
-        const assigned = assignments[day] || "none";
+      DAY_INDICES.forEach((dayIdx, i) => {
         const date = weekDates[i];
+        const dateKey = getDateKey(date);
+        const assigned = assignments[dateKey] || "none";
         const currentDayCheck = isToday(date);
         const displayName = assigned === "A" ? hostA : assigned === "B" ? hostB : "—";
 
@@ -388,10 +386,10 @@
         card.className = `day-card assigned-${assigned} ${currentDayCheck ? 'today-highlight' : ''}`;
         card.setAttribute("tabindex", "0");
         card.setAttribute("role", "button");
-        card.setAttribute("aria-label", `${day}, ${date.getDate()} ${date.toLocaleDateString("en-MY", { month: "short" })}. Assigned host: ${displayName}. Click to change.`);
+        card.setAttribute("aria-label", `${DAY_SHORT[i]} ${date.getDate()} ${date.toLocaleDateString("en-MY", { month: "short" })}. Assigned host: ${displayName}`);
         
-        card.onclick = () => cycleAssignment(day);
-        card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycleAssignment(day); } };
+        card.onclick = () => cycleAssignment(dateKey);
+        card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycleAssignment(dateKey); } };
 
         card.innerHTML = `
           ${currentDayCheck ? '<div class="today-badge">TODAY</div>' : ''}
@@ -408,7 +406,6 @@
     }
 
     function render() {
-      // 1. Render Legend Blocks
       const containerA = document.getElementById("host-a-container");
       const containerB = document.getElementById("host-b-container");
 
@@ -420,7 +417,6 @@
         containerB.innerHTML = `<span class="host-display">${hostB}</span>`;
       }
 
-      // 2. Nav Labels + Timelines
       const weekDates = getWeekDates(weekOffset);
       const start = weekDates[0];
       const end = weekDates[5];
@@ -431,11 +427,9 @@
       const todayBtn = document.getElementById("today-btn");
       todayBtn.style.display = weekOffset !== 0 ? "inline-block" : "none";
 
-      // 3. Grid Generation
       renderGridOnly();
     }
 
-    // Trigger Setup on Run
     init();
   </script>
 </body>
