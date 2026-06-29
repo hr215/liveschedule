@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Host Schedule</title>
+  <style>
+    :root {
+      --bg-color: #0D0D14;
+      --text-color: #F0F0F5;
+      --host-a-bg: #7B61FF;
+      --host-a-light: rgba(123,97,255,0.15);
+      --host-a-border: rgba(123,97,255,0.4);
+      --host-b-bg: #FF4D6D;
+      --host-b-light: rgba(255,77,109,0.15);
+      --host-b-border: rgba(255,77,109,0.4);
+      --host-none-bg: #2A2A3E;
+      --host-none-light: rgba(255,255,255,0.04);
+      --host-none-border: rgba(255,255,255,0.08);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      padding: 32px 24px;
+      box-sizing: border-box;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Header Styling */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .live-badge {
+      display: inline-block;
+      background: var(--host-b-bg);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      padding: 4px 12px;
+      border-radius: 2px;
+      margin-bottom: 12px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: #666;
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    /* Legend / Controls Area */
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .host-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 8px;
+      padding: 8px 14px;
+    }
+
+    .host-pill.a { background: var(--host-a-light); border: 1px solid var(--host-a-border); }
+    .host-pill.b { background: var(--host-b-light); border: 1px solid var(--host-b-border); }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.a { background: var(--host-a-bg); }
+    .dot.b { background: var(--host-b-bg); }
+
+    .host-input {
+      background: transparent;
+      border: none;
+      color: var(--text-color);
+      font-size: 14px;
+      font-weight: 600;
+      outline: none;
+      width: 120px;
+      padding: 2px 0;
+    }
+    .host-input.a { border-bottom: 1px solid var(--host-a-bg); }
+    .host-input.b { border-bottom: 1px solid var(--host-b-bg); }
+
+    .host-display {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-color);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn.active {
+      background: var(--host-a-bg);
+      border-color: var(--host-a-bg);
+    }
+
+    /* Navigation */
+    .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .nav-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-color);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .today-btn {
+      font-size: 11px;
+      padding: 6px 12px;
+      background: rgba(123,97,255,0.15);
+      border: 1px solid rgba(123,97,255,0.3);
+    }
+
+    .week-label {
+      font-size: 14px;
+      color: #aaa;
+      font-weight: 500;
+      min-width: 200px;
+      text-align: center;
+    }
+
+    /* Cards Grid Layout */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .day-card {
+      border-radius: 12px;
+      padding: 20px 16px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      user-select: none;
+    }
+
+    .day-card.assigned-none { background: var(--host-none-light); border: 1px solid var(--host-none-border); }
+    .day-card.assigned-A { background: var(--host-a-light); border: 1px solid var(--host-a-border); }
+    .day-card.assigned-B { background: var(--host-b-light); border: 1px solid var(--host-b-border); }
+    
+    .day-card.today-highlight {
+      border: 1px solid #FFD700 !important;
+      box-shadow: 0 0 0 2px rgba(255,215,0,0.3);
+    }
+
+    .today-badge {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 9px;
+      color: #FFD700;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .day-short {
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .date-num {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .date-month {
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      margin-left: 4px;
+    }
+
+    .host-status {
+      font-size: 13px;
+      font-weight: 700;
+      padding-top: 10px;
+    }
+    .assigned-none .host-status { color: #444; border-top: 1px solid var(--host-none-border); }
+    .assigned-A .host-status { color: var(--host-a-bg); border-top: 1px solid var(--host-a-border); }
+    .assigned-B .host-status { color: var(--host-b-bg); border-top: 1px solid var(--host-b-border); }
+
+    .footer-note {
+      text-align: center;
+      color: #333;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="live-badge">● LIVE</div>
+      <h1 class="title">HOST SCHEDULE</h1>
+      <p class="subtitle">11:00 PM – 12:00 AM</p>
+    </header>
+
+    <!-- Legend + Configurations -->
+    <section class="controls" aria-label="Schedule settings">
+      <div class="host-pill a">
+        <div class="dot a"></div>
+        <div id="host-a-container"></div>
+      </div>
+      <div class="host-pill b">
+        <div class="dot b"></div>
+        <div id="host-b-container"></div>
+      </div>
+      <button class="btn" id="edit-btn" onclick="toggleEditMode()">Edit Names</button>
+    </section>
+
+    <!-- Week Navigation -->
+    <nav class="nav-container" aria-label="Week navigation">
+      <button class="nav-btn" onclick="changeWeek(-1)" aria-label="Previous week">‹</button>
+      <span class="week-label" id="week-label"></span>
+      <button class="nav-btn" onclick="changeWeek(1)" aria-label="Next week">›</button>
+      <button class="nav-btn today-btn" id="today-btn" style="display: none;" onclick="resetWeek()">Today</button>
+    </nav>
+
+    <!-- Schedule Grid -->
+    <main class="grid" id="schedule-grid" aria-label="Weekly assignments"></main>
+
+    <footer class="footer-note">
+      Click any day card to cycle through assigned hosts. Updates save automatically.
+    </footer>
+  </div>
+
+  <script>
+    const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const DAY_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI"];
+    const DAY_INDICES = [0, 1, 2, 3, 4, 5];
+
+    // Core States
+    let hostA = "Host A";
+    let hostB = "Host B";
+    let assignments = {
+      Sunday: "A", Monday: "B", Tuesday: "A",
+      Wednesday: "B", Thursday: "A", Friday: "B",
+    };
+    let weekOffset = 0;
+    let editMode = false;
+
+    // Initialize data from local storage tracking
+    function init() {
+      try {
+        const stored = localStorage.getItem("live-schedule-config");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.hostA) hostA = parsed.hostA;
+          if (parsed.hostB) hostB = parsed.hostB;
+          if (parsed.assignments) assignments = parsed.assignments;
+        }
+      } catch (e) { console.error("Could not fetch storage context data", e); }
+      render();
+    }
+
+    function save() {
+      try {
+        localStorage.setItem("live-schedule-config", JSON.stringify({
+          hostA, hostB, assignments
+        }));
+      } catch (e) { console.error("Could not write layout configurations", e); }
+    }
+
+    function getWeekDates(offset) {
+      const today = new Date();
+      const dayOfWeek = today.getDay();
+      const sunday = new Date(today);
+      sunday.setDate(today.getDate() - dayOfWeek + offset * 7);
+
+      return DAY_INDICES.map((i) => {
+        const d = new Date(sunday);
+        d.setDate(sunday.getDate() + i);
+        return d;
+      });
+    }
+
+    function isToday(date) {
+      return date.toDateString() === new Date().toDateString();
+    }
+
+    function toggleEditMode() {
+      editMode = !editMode;
+      const btn = document.getElementById("edit-btn");
+      if (editMode) {
+        btn.textContent = "Done";
+        btn.classList.add("active");
+      } else {
+        btn.textContent = "Edit Names";
+        btn.classList.remove("active");
+        save();
+      }
+      render();
+    }
+
+    function updateHostName(key, value) {
+      if (key === 'A') hostA = value;
+      if (key === 'B') hostB = value;
+      // Re-render elements without breaking user cursor inputs Focus
+      save();
+      renderGridOnly();
+    }
+
+    function cycleAssignment(day) {
+      const current = assignments[day] || "none";
+      const next = current === "A" ? "B" : current === "B" ? "none" : "A";
+      assignments[day] = next;
+      save();
+      renderGridOnly();
+    }
+
+    function changeWeek(direction) {
+      weekOffset += direction;
+      render();
+    }
+
+    function resetWeek() {
+      weekOffset = 0;
+      render();
+    }
+
+    // Secondary UI update to avoid losing typing input focus states
+    function renderGridOnly() {
+      const weekDates = getWeekDates(weekOffset);
+      const grid = document.getElementById("schedule-grid");
+      grid.innerHTML = "";
+
+      DAYS.forEach((day, i) => {
+        const assigned = assignments[day] || "none";
+        const date = weekDates[i];
+        const currentDayCheck = isToday(date);
+        const displayName = assigned === "A" ? hostA : assigned === "B" ? hostB : "—";
+
+        const card = document.createElement("div");
+        card.className = `day-card assigned-${assigned} ${currentDayCheck ? 'today-highlight' : ''}`;
+        card.setAttribute("tabindex", "0");
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", `${day}, ${date.getDate()} ${date.toLocaleDateString("en-MY", { month: "short" })}. Assigned host: ${displayName}. Click to change.`);
+        
+        card.onclick = () => cycleAssignment(day);
+        card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycleAssignment(day); } };
+
+        card.innerHTML = `
+          ${currentDayCheck ? '<div class="today-badge">TODAY</div>' : ''}
+          <div class="day-short">${DAY_SHORT[i]}</div>
+          <div class="date-num">
+            ${date.getDate()}<span class="date-month">${date.toLocaleDateString("en-MY", { month: "short" })}</span>
+          </div>
+          <div class="host-status">
+            ${assigned === "none" ? "No Host" : displayName}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function render() {
+      // 1. Render Legend Blocks
+      const containerA = document.getElementById("host-a-container");
+      const containerB = document.getElementById("host-b-container");
+
+      if (editMode) {
+        containerA.innerHTML = `<input type="text" class="host-input a" value="${hostA}" oninput="updateHostName('A', this.value)" aria-label="Edit Host A Name" />`;
+        containerB.innerHTML = `<input type="text" class="host-input b" value="${hostB}" oninput="updateHostName('B', this.value)" aria-label="Edit Host B Name" />`;
+      } else {
+        containerA.innerHTML = `<span class="host-display">${hostA}</span>`;
+        containerB.innerHTML = `<span class="host-display">${hostB}</span>`;
+      }
+
+      // 2. Nav Labels + Timelines
+      const weekDates = getWeekDates(weekOffset);
+      const start = weekDates[0];
+      const end = weekDates[5];
+      
+      document.getElementById("week-label").textContent = 
+        `${start.toLocaleDateString("en-MY", { day: "2-digit", month: "short" })} – ${end.toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}`;
+
+      const todayBtn = document.getElementById("today-btn");
+      todayBtn.style.display = weekOffset !== 0 ? "inline-block" : "none";
+
+      // 3. Grid Generation
+      renderGridOnly();
+    }
+
+    // Trigger Setup on Run
+    init();
+  </script>
+</body>
+</html>
