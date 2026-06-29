@@ -46,4 +46,222 @@
     
     .nav-container { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px; }
     .nav-btn {
-      background: rgba(255
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      color: #F0F0F5; border-radius: 8px; padding: 6px 14px; font-size: 18px;
+      cursor: pointer; line-height: 1;
+    }
+    .today-btn { font-size: 11px; padding: 6px 12px; background: rgba(123,97,255,0.15); border: 1px solid rgba(123,97,255,0.3); display: none; }
+    .week-label { font-size: 14px; color: #aaa; font-weight: 500; min-width: 200px; text-align: center; }
+    
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px; max-width: 900px; margin: 0 auto;
+    }
+    .card {
+      border-radius: 12px; padding: 20px 16px; cursor: pointer;
+      transition: all 0.15s ease; position: relative; user-select: none;
+    }
+    .today-badge { position: absolute; top: 8px; right: 10px; font-size: 9px; color: #FFD700; font-weight: 700; letter-spacing: 1px; }
+    .card-day { font-size: 11px; font-weight: 700; color: #888; letter-spacing: 2px; margin-bottom: 6px; }
+    .card-date { font-size: 20px; font-weight: 800; color: #F0F0F5; margin-bottom: 12px; }
+    .card-month { font-size: 13px; font-weight: 500; color: #666; margin-dash: 4px; }
+    .card-assign { font-size: 13px; font-weight: 700; padding-top: 10px; }
+    
+    .footer { text-align: center; color: #333; font-size: 11px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="live-badge">● LIVE</div>
+    <h1 class="title">HOST SCHEDULE</h1>
+    <p class="subtitle">11:00 PM – 12:00 AM</p>
+  </div>
+
+  <div class="legend-container">
+    <div id="pill-A" class="host-pill">
+      <div class="dot" style="background: #7B61FF;"></div>
+      <span id="display-A">Host A</span>
+    </div>
+    <div id="pill-B" class="host-pill">
+      <div class="dot" style="background: #FF4D6D;"></div>
+      <span id="display-B">Host B</span>
+    </div>
+    <button id="edit-btn" class="btn">Edit Names</button>
+  </div>
+
+  <div class="nav-container">
+    <button id="prev-btn" class="nav-btn">‹</button>
+    <span id="week-label" class="week-label"></span>
+    <button id="next-btn" class="nav-btn">›</button>
+    <button id="today-btn" class="nav-btn today-btn">Today</button>
+  </div>
+
+  <div id="schedule-grid" class="grid"></div>
+
+  <p class="footer">Click any day to assign host · Each date is independent</p>
+
+  <script>
+    // Configuration & State
+    const DAY_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI"];
+    const DAY_INDICES = [0, 1, 2, 3, 4, 5];
+    const HOST_COLORS = {
+      A: { bg: "#7B61FF", light: "rgba(123,97,255,0.15)", border: "rgba(123,97,255,0.4)" },
+      B: { bg: "#FF4D6D", light: "rgba(255,77,109,0.15)", border: "rgba(255,77,109,0.4)" },
+      none: { bg: "#2A2A3E", light: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)" },
+    };
+
+    // Storage Polyfill (Uses standard localStorage if window.storage isn't present)
+    const storage = window.storage || {
+      get: async (key) => ({ value: localStorage.getItem(key) }),
+      set: async (key, val) => localStorage.setItem(key, val)
+    };
+
+    let state = {
+      hostA: "Host A",
+      hostB: "Host B",
+      assignments: {},
+      weekOffset: 0,
+      editMode: false
+    };
+
+    // Date Utilities
+    function toDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function getWeekDates(offsetWeeks) {
+      const today = new Date();
+      const sunday = new Date(today);
+      sunday.setDate(today.getDate() - today.getDay() + offsetWeeks * 7);
+      return DAY_INDICES.map((i) => {
+        const d = new Date(sunday);
+        d.setDate(sunday.getDate() + i);
+        return d;
+      });
+    }
+
+    function isToday(date) {
+      return toDateKey(date) === toDateKey(new Date());
+    }
+
+    // Storage Handling
+    async function loadData() {
+      try {
+        const r = await storage.get("live-schedule-config", true);
+        if (r && r.value) {
+          const d = JSON.parse(r.value);
+          if (d.hostA) state.hostA = d.hostA;
+          if (d.hostB) state.hostB = d.hostB;
+          if (d.assignments) state.assignments = d.assignments;
+        }
+      } catch (_) {}
+      render();
+    }
+
+    async function saveData() {
+      try {
+        await storage.set("live-schedule-config", JSON.stringify({
+          hostA: state.hostA, hostB: state.hostB, assignments: state.assignments,
+        }), true);
+      } catch (_) {}
+    }
+
+    // Actions
+    function cycleAssignment(dateKey) {
+      const cur = state.assignments[dateKey] || "none";
+      const next = cur === "none" ? "A" : cur === "A" ? "B" : "none";
+      state.assignments[dateKey] = next;
+      saveData();
+      render();
+    }
+
+    // UI Render Engine
+    function render() {
+      const colorA = HOST_COLORS.A;
+      const colorB = HOST_COLORS.B;
+
+      // Render Legend Pills
+      const pillA = document.getElementById("pill-A");
+      const pillB = document.getElementById("pill-B");
+      pillA.style.background = colorA.light; pillA.style.border = `1px solid ${colorA.border}`;
+      pillB.style.background = colorB.light; pillB.style.border = `1px solid ${colorB.border}`;
+
+      const displayA = document.getElementById("display-A");
+      const displayB = document.getElementById("display-B");
+
+      if (state.editMode) {
+        displayA.innerHTML = `<input id="input-A" class="host-input" style="border-bottom: 1px solid ${colorA.bg}" value="${state.hostA}">`;
+        displayB.innerHTML = `<input id="input-B" class="host-input" style="border-bottom: 1px solid ${colorB.bg}" value="${state.hostB}">`;
+        
+        // Attach input events
+        document.getElementById("input-A").addEventListener("input", (e) => { state.hostA = e.target.value; saveData(); });
+        document.getElementById("input-B").addEventListener("input", (e) => { state.hostB = e.target.value; saveData(); });
+      } else {
+        displayA.textContent = state.hostA;
+        displayB.textContent = state.hostB;
+      }
+
+      const editBtn = document.getElementById("edit-btn");
+      editBtn.textContent = state.editMode ? "Done" : "Edit Names";
+      editBtn.className = state.editMode ? "btn btn-edit-active" : "btn";
+
+      // Render Navigation
+      const weekDates = getWeekDates(state.weekOffset);
+      const s = weekDates[0];
+      const e = weekDates[5];
+      document.getElementById("week-label").textContent = `${s.toLocaleDateString("en-MY", { day: "2-digit", month: "short" })} – ${e.toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}`;
+      
+      document.getElementById("today-btn").style.display = state.weekOffset !== 0 ? "inline-block" : "none";
+
+      // Render Schedule Grid
+      const grid = document.getElementById("schedule-grid");
+      grid.innerHTML = "";
+
+      weekDates.forEach((date, i) => {
+        const dateKey = toDateKey(date);
+        const assigned = state.assignments[dateKey] || "none";
+        const c = HOST_COLORS[assigned] || HOST_COLORS.none;
+        const today = isToday(date);
+        const hostName = assigned === "A" ? state.hostA : assigned === "B" ? state.hostB : "—";
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.title = "Click to assign host";
+        card.style.background = c.light;
+        card.style.border = `1px solid ${today ? "#FFD700" : c.border}`;
+        card.style.boxShadow = today ? "0 0 0 2px rgba(255,215,0,0.3)" : "none";
+
+        card.innerHTML = `
+          ${today ? '<div class="today-badge">TODAY</div>' : ''}
+          <div class="card-day">${DAY_SHORT[i]}</div>
+          <div class="card-date">
+            ${date.getDate()}<span class="card-month"> ${date.toLocaleDateString("en-MY", { month: "short" })}</span>
+          </div>
+          <div class="card-assign" style="color: ${assigned === 'none' ? '#444' : c.bg}; border-top: 1px solid ${c.border};">
+            ${assigned === "none" ? "No Host" : hostName}
+          </div>
+        `;
+
+        card.addEventListener("click", () => cycleAssignment(dateKey));
+        grid.appendChild(card);
+      });
+    }
+
+    // Setup Event Listeners
+    document.getElementById("edit-btn").addEventListener("click", () => {
+      state.editMode = !state.editMode;
+      render();
+    });
+    document.getElementById("prev-btn").addEventListener("click", () => { state.weekOffset--; render(); });
+    document.getElementById("next-btn").addEventListener("click", () => { state.weekOffset++; render(); });
+    document.getElementById("today-btn").addEventListener("click", () => { state.weekOffset = 0; render(); });
+
+    // Initialization
+    loadData();
+  </script>
+</body>
+</html>
