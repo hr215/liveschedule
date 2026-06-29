@@ -1,265 +1,242 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Host Schedule</title>
-  <style>
-    :root {
-      --bg-color: #0D0D14;
-      --text-color: #F0F0F5;
-      --host-a-bg: #7B61FF;
-      --host-a-light: rgba(123,97,255,0.15);
-      --host-a-border: rgba(123,97,255,0.4);
-      --host-b-bg: #FF4D6D;
-      --host-b-light: rgba(255,77,109,0.15);
-      --host-b-border: rgba(255,77,109,0.4);
-      --host-none-bg: #2A2A3E;
-      --host-none-light: rgba(255,255,255,0.04);
-      --host-none-border: rgba(255,255,255,0.08);
-    }
+import { useState, useEffect } from "react";
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--bg-color);
-      color: var(--text-color);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      padding: 32px 24px;
-      box-sizing: border-box;
-    }
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const DAY_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI"];
+const DAY_INDICES = [0, 1, 2, 3, 4, 5];
 
-    .container { max-width: 900px; margin: 0 auto; }
-    .header { text-align: center; margin-bottom: 32px; }
-    .live-badge {
-      display: inline-block; background: var(--host-b-bg); color: #fff;
-      font-size: 11px; font-weight: 700; letter-spacing: 3px;
-      padding: 4px 12px; border-radius: 2px; margin-bottom: 12px;
-    }
-    .title { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 1px; }
-    .subtitle { margin: 6px 0 0; color: #666; font-size: 13px; letter-spacing: 1px; }
+const HOST_COLORS = {
+  A: { bg: "#7B61FF", light: "rgba(123,97,255,0.15)", border: "rgba(123,97,255,0.4)" },
+  B: { bg: "#FF4D6D", light: "rgba(255,77,109,0.15)", border: "rgba(255,77,109,0.4)" },
+  none: { bg: "#2A2A3E", light: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)" },
+};
 
-    .controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
-    .host-pill { display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 8px 14px; }
-    .host-pill.a { background: var(--host-a-light); border: 1px solid var(--host-a-border); }
-    .host-pill.b { background: var(--host-b-light); border: 1px solid var(--host-b-border); }
+function toDateKey(date) {
+  // Use local date parts to avoid UTC shift issues
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
-    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .dot.a { background: var(--host-a-bg); }
-    .dot.b { background: var(--host-b-bg); }
+function getWeekDates(offsetWeeks) {
+  const today = new Date();
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - today.getDay() + offsetWeeks * 7);
+  return DAY_INDICES.map((i) => {
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + i);
+    return d;
+  });
+}
 
-    .host-input {
-      background: transparent; border: none; color: var(--text-color);
-      font-size: 14px; font-weight: 600; outline: none; width: 120px; padding: 2px 0;
-    }
-    .host-input.a { border-bottom: 1px solid var(--host-a-bg); }
-    .host-input.b { border-bottom: 1px solid var(--host-b-bg); }
-    .host-display { font-size: 14px; font-weight: 600; }
+function isToday(date) {
+  return toDateKey(date) === toDateKey(new Date());
+}
 
-    .btn {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-      color: var(--text-color); border-radius: 8px; padding: 8px 16px;
-      font-size: 13px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;
-    }
-    .btn.active { background: var(--host-a-bg); border-color: var(--host-a-bg); }
+export default function LiveSchedule() {
+  const [hostA, setHostA] = useState("Host A");
+  const [hostB, setHostB] = useState("Host B");
+  const [assignments, setAssignments] = useState({}); // { "2026-06-29": "A", ... }
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [editMode, setEditMode] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
-    .nav-container { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px; }
-    .nav-btn {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      color: var(--text-color); border-radius: 8px; padding: 6px 14px; font-size: 18px; cursor: pointer; line-height: 1;
-    }
-    .today-btn { font-size: 11px; padding: 6px 12px; background: rgba(123,97,255,0.15); border: 1px solid rgba(123,97,255,0.3); }
-    .week-label { font-size: 14px; color: #aaa; font-weight: 500; min-width: 200px; text-align: center; }
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 32px; }
-    .day-card { border-radius: 12px; padding: 20px 16px; cursor: pointer; transition: all 0.15s ease; position: relative; user-select: none; }
-    .day-card.assigned-none { background: var(--host-none-light); border: 1px solid var(--host-none-border); }
-    .day-card.assigned-A { background: var(--host-a-light); border: 1px solid var(--host-a-border); }
-    .day-card.assigned-B { background: var(--host-b-light); border: 1px solid var(--host-b-border); }
-    .day-card.today-highlight { border: 1px solid #FFD700 !important; box-shadow: 0 0 0 2px rgba(255,215,0,0.3); }
-
-    .today-badge { position: absolute; top: 8px; right: 10px; font-size: 9px; color: #FFD700; font-weight: 700; letter-spacing: 1px; }
-    .day-short { font-size: 11px; font-weight: 700; color: #888; letter-spacing: 2px; margin-bottom: 6px; }
-    .date-num { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
-    .date-month { font-size: 13px; font-weight: 500; color: #666; margin-left: 4px; }
-    .host-status { font-size: 13px; font-weight: 700; padding-top: 10px; }
-    
-    .assigned-none .host-status { color: #444; border-top: 1px solid var(--host-none-border); }
-    .assigned-A .host-status { color: var(--host-a-bg); border-top: 1px solid var(--host-a-border); }
-    .assigned-B .host-status { color: var(--host-b-bg); border-top: 1px solid var(--host-b-border); }
-    .footer-note { text-align: center; color: #444; font-size: 11px; }
-  </style>
-
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-</head>
-<body>
-
-  <div class="container">
-    <header class="header">
-      <div class="live-badge">● LIVE SYNC</div>
-      <h1 class="title">HOST SCHEDULE</h1>
-      <p class="subtitle">11:00 PM – 12:00 AM</p>
-    </header>
-
-    <section class="controls" aria-label="Schedule settings">
-      <div class="host-pill a">
-        <div class="dot a"></div>
-        <div id="host-a-container"></div>
-      </div>
-      <div class="host-pill b">
-        <div class="dot b"></div>
-        <div id="host-b-container"></div>
-      </div>
-      <button class="btn" id="edit-btn" onclick="toggleEditMode()">Edit Names</button>
-    </section>
-
-    <nav class="nav-container" aria-label="Week navigation">
-      <button class="nav-btn" onclick="changeWeek(-1)">‹</button>
-      <span class="week-label" id="week-label"></span>
-      <button class="nav-btn" onclick="changeWeek(1)">›</button>
-      <button class="nav-btn today-btn" id="today-btn" style="display: none;" onclick="resetWeek()">Today</button>
-    </nav>
-
-    <main class="grid" id="schedule-grid"></main>
-    <footer class="footer-note">Changes made here update instantly on everyone's screens everywhere.</footer>
-  </div>
-
-  <script>
-    const DAY_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI"];
-    const DAY_INDICES = [0, 1, 2, 3, 4, 5];
-
-    // Paste your Firebase Credentials right here:
-    const firebaseConfig = {
-      projectId: "YOUR_PROJECT_ID_HERE",
-      databaseURL: "YOUR_DATABASE_URL_HERE"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    let hostA = "Host A";
-    let hostB = "Host B";
-    let assignments = {}; // Completely empty initialization to avoid day-of-week carryover
-    let weekOffset = 0;
-    let editMode = false;
-
-    function getDateKey(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    // Connect to database and sync real-time changes
-    db.ref("schedule-data-v3").on("value", (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        if (data.hostA) hostA = data.hostA;
-        if (data.hostB) hostB = data.hostB;
-        assignments = data.assignments || {};
-        render();
-      }
-    });
-
-    function pushToCloud() {
-      db.ref("schedule-data-v3").set({ hostA, hostB, assignments });
-    }
-
-    function getWeekDates(offset) {
-      const today = new Date();
-      const dayOfWeek = today.getDay();
-      const sunday = new Date(today);
-      sunday.setDate(today.getDate() - dayOfWeek + offset * 7);
-      return DAY_INDICES.map((i) => {
-        const d = new Date(sunday);
-        d.setDate(sunday.getDate() + i);
-        return d;
-      });
-    }
-
-    function isToday(date) { return date.toDateString() === new Date().toDateString(); }
-
-    function toggleEditMode() {
-      editMode = !editMode;
-      const btn = document.getElementById("edit-btn");
-      if (editMode) {
-        btn.textContent = "Done";
-        btn.classList.add("active");
-      } else {
-        btn.textContent = "Edit Names";
-        btn.classList.remove("active");
-        pushToCloud();
-      }
-      render();
-    }
-
-    function updateHostName(key, value) {
-      if (key === 'A') hostA = value;
-      if (key === 'B') hostB = value;
-      db.ref(`schedule-data-v3/host${key}`).set(value);
-      renderGridOnly();
-    }
-
-    function cycleAssignment(dateKey) {
-      const current = assignments[dateKey] || "none";
-      const next = current === "A" ? "B" : current === "B" ? "none" : "A";
-      assignments[dateKey] = next;
-      db.ref(`schedule-data-v3/assignments/${dateKey}`).set(next);
-      renderGridOnly();
-    }
-
-    function changeWeek(direction) { weekOffset += direction; render(); }
-    function resetWeek() { weekOffset = 0; render(); }
-
-    function renderGridOnly() {
-      const weekDates = getWeekDates(weekOffset);
-      const grid = document.getElementById("schedule-grid");
-      grid.innerHTML = "";
-
-      DAY_INDICES.forEach((dayIdx, i) => {
-        const date = weekDates[i];
-        const dateKey = getDateKey(date);
-        const assigned = assignments[dateKey] || "none";
-        const currentDayCheck = isToday(date);
-        const displayName = assigned === "A" ? hostA : assigned === "B" ? hostB : "—";
-
-        const card = document.createElement("div");
-        card.className = `day-card assigned-${assigned} ${currentDayCheck ? 'today-highlight' : ''}`;
-        card.onclick = () => cycleAssignment(dateKey);
-
-        card.innerHTML = `
-          ${currentDayCheck ? '<div class="today-badge">TODAY</div>' : ''}
-          <div class="day-short">${DAY_SHORT[i]}</div>
-          <div class="date-num">${date.getDate()}<span class="date-month">${date.toLocaleDateString("en-MY", { month: "short" })}</span></div>
-          <div class="host-status">${assigned === "none" ? "No Host" : displayName}</div>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    function render() {
-      const containerA = document.getElementById("host-a-container");
-      const containerB = document.getElementById("host-b-container");
-
-      if (editMode) {
-        if(document.activeElement.tagName !== 'INPUT') {
-          containerA.innerHTML = `<input type="text" class="host-input a" value="${hostA}" oninput="updateHostName('A', this.value)" />`;
-          containerB.innerHTML = `<input type="text" class="host-input b" value="${hostB}" oninput="updateHostName('B', this.value)" />`;
+  useEffect(() => {
+    async function load() {
+      try {
+        const r = await window.storage.get("live-schedule-config", true);
+        if (r) {
+          const d = JSON.parse(r.value);
+          if (d.hostA) setHostA(d.hostA);
+          if (d.hostB) setHostB(d.hostB);
+          if (d.assignments) setAssignments(d.assignments);
         }
-      } else {
-        containerA.innerHTML = `<span class="host-display">${hostA}</span>`;
-        containerB.innerHTML = `<span class="host-display">${hostB}</span>`;
-      }
-
-      const weekDates = getWeekDates(weekOffset);
-      document.getElementById("week-label").textContent = `${weekDates[0].toLocaleDateString("en-MY", { day: "2-digit", month: "short" })} – ${weekDates[5].toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}`;
-      document.getElementById("today-btn").style.display = weekOffset !== 0 ? "inline-block" : "none";
-
-      renderGridOnly();
+      } catch (_) {}
+      setLoaded(true);
     }
-    render();
-  </script>
-</body>
-</html>
+    load();
+  }, []);
+
+  async function save(newA, newB, newAssign) {
+    try {
+      await window.storage.set("live-schedule-config", JSON.stringify({
+        hostA: newA, hostB: newB, assignments: newAssign,
+      }), true);
+    } catch (_) {}
+  }
+
+  function cycleAssignment(dateKey) {
+    const cur = assignments[dateKey] || "none";
+    const next = cur === "none" ? "A" : cur === "A" ? "B" : "none";
+    const updated = { ...assignments, [dateKey]: next };
+    setAssignments(updated);
+    save(hostA, hostB, updated);
+  }
+
+  function updateHostA(v) { setHostA(v); save(v, hostB, assignments); }
+  function updateHostB(v) { setHostB(v); save(hostA, v, assignments); }
+
+  const weekDates = getWeekDates(weekOffset);
+
+  const weekLabel = (() => {
+    const s = weekDates[0];
+    const e = weekDates[5];
+    return `${s.toLocaleDateString("en-MY", { day: "2-digit", month: "short" })} – ${e.toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}`;
+  })();
+
+  const hostName = (key) => key === "A" ? hostA : key === "B" ? hostB : "—";
+  const color = (key) => HOST_COLORS[key] || HOST_COLORS.none;
+
+  if (!loaded) return null;
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: "#0D0D14", color: "#F0F0F5",
+      fontFamily: "'Segoe UI', system-ui, sans-serif", padding: "32px 24px",
+      boxSizing: "border-box",
+    }}>
+
+      {/* Header */}
+      <div style={{ textAlign: "center", marginBottom: "32px" }}>
+        <div style={{
+          display: "inline-block", background: "#FF4D6D",
+          color: "#fff", fontSize: "11px", fontWeight: 700,
+          letterSpacing: "3px", padding: "4px 12px", borderRadius: "2px",
+          marginBottom: "12px",
+        }}>● LIVE</div>
+        <h1 style={{
+          margin: 0, fontSize: "28px", fontWeight: 800,
+          letterSpacing: "1px", color: "#F0F0F5",
+        }}>HOST SCHEDULE</h1>
+        <p style={{ margin: "6px 0 0", color: "#666", fontSize: "13px", letterSpacing: "1px" }}>
+          11:00 PM – 12:00 AM
+        </p>
+      </div>
+
+      {/* Host Legend + Edit */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: "16px", marginBottom: "28px", flexWrap: "wrap",
+      }}>
+        {[{ key: "A", name: hostA, setter: updateHostA }, { key: "B", name: hostB, setter: updateHostB }].map(({ key, name, setter }) => (
+          <div key={key} style={{
+            display: "flex", alignItems: "center", gap: "10px",
+            background: color(key).light, border: `1px solid ${color(key).border}`,
+            borderRadius: "8px", padding: "8px 14px",
+          }}>
+            <div style={{
+              width: "10px", height: "10px", borderRadius: "50%",
+              background: color(key).bg, flexShrink: 0,
+            }} />
+            {editMode ? (
+              <input
+                value={name}
+                onChange={(e) => setter(e.target.value)}
+                style={{
+                  background: "transparent", border: "none", borderBottom: `1px solid ${color(key).bg}`,
+                  color: "#F0F0F5", fontSize: "14px", fontWeight: 600,
+                  outline: "none", width: "120px", padding: "2px 0",
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: "14px", fontWeight: 600 }}>{name}</span>
+            )}
+          </div>
+        ))}
+        <button
+          onClick={() => setEditMode(!editMode)}
+          style={{
+            background: editMode ? "#7B61FF" : "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "#F0F0F5", borderRadius: "8px", padding: "8px 16px",
+            fontSize: "13px", cursor: "pointer", fontWeight: 600,
+          }}
+        >
+          {editMode ? "Done" : "Edit Names"}
+        </button>
+      </div>
+
+      {/* Week Nav */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: "16px", marginBottom: "24px",
+      }}>
+        <button onClick={() => setWeekOffset(w => w - 1)} style={navBtn}>‹</button>
+        <span style={{ fontSize: "14px", color: "#aaa", fontWeight: 500, minWidth: "200px", textAlign: "center" }}>
+          {weekLabel}
+        </span>
+        <button onClick={() => setWeekOffset(w => w + 1)} style={navBtn}>›</button>
+        {weekOffset !== 0 && (
+          <button onClick={() => setWeekOffset(0)} style={{ ...navBtn, fontSize: "11px", padding: "6px 12px", background: "rgba(123,97,255,0.15)", border: "1px solid rgba(123,97,255,0.3)" }}>
+            Today
+          </button>
+        )}
+      </div>
+
+      {/* Schedule Grid */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+        gap: "12px", maxWidth: "900px", margin: "0 auto",
+      }}>
+        {weekDates.map((date, i) => {
+          const dateKey = toDateKey(date);
+          const assigned = assignments[dateKey] || "none";
+          const c = color(assigned);
+          const today = isToday(date);
+
+          return (
+            <div
+              key={dateKey}
+              onClick={() => cycleAssignment(dateKey)}
+              title="Click to assign host"
+              style={{
+                background: c.light,
+                border: `1px solid ${today ? "#FFD700" : c.border}`,
+                borderRadius: "12px", padding: "20px 16px",
+                cursor: "pointer", transition: "all 0.15s ease",
+                position: "relative", userSelect: "none",
+                boxShadow: today ? "0 0 0 2px rgba(255,215,0,0.3)" : "none",
+              }}
+            >
+              {today && (
+                <div style={{
+                  position: "absolute", top: "8px", right: "10px",
+                  fontSize: "9px", color: "#FFD700", fontWeight: 700, letterSpacing: "1px",
+                }}>TODAY</div>
+              )}
+              <div style={{ fontSize: "11px", fontWeight: 700, color: "#888", letterSpacing: "2px", marginBottom: "6px" }}>
+                {DAY_SHORT[i]}
+              </div>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: "#F0F0F5", marginBottom: "12px" }}>
+                {date.getDate()}
+                <span style={{ fontSize: "13px", fontWeight: 500, color: "#666", marginLeft: "4px" }}>
+                  {date.toLocaleDateString("en-MY", { month: "short" })}
+                </span>
+              </div>
+              <div style={{
+                fontSize: "13px", fontWeight: 700,
+                color: assigned === "none" ? "#444" : c.bg,
+                borderTop: `1px solid ${c.border}`, paddingTop: "10px",
+              }}>
+                {assigned === "none" ? "No Host" : hostName(assigned)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p style={{ textAlign: "center", color: "#333", fontSize: "11px", marginTop: "32px" }}>
+        Click any day to assign host · Each date is independent
+      </p>
+    </div>
+  );
+}
+
+const navBtn = {
+  background: "rgba(255,255,255,0.06)",
+  border: "1px solid rgba(255,255,255,0.1)",
+  color: "#F0F0F5", borderRadius: "8px",
+  padding: "6px 14px", fontSize: "18px",
+  cursor: "pointer", lineHeight: 1,
+};
