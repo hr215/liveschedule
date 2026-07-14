@@ -471,9 +471,19 @@
 
 <div id="root"></div>
 
+<!-- ES Module Import Map for GitHub Pages Compatibility -->
+<script type="importmap">
+  {
+    "imports": {
+      "firebase/app": "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js",
+      "firebase/database": "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js"
+    }
+  }
+</script>
+
 <script type="module">
-import { initializeApp } from "https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.2/firebase-app.js";
-import { getDatabase, ref, set, onValue, runTransaction } from "https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.2/firebase-database.js";
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, set, onValue, runTransaction } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDQ9hs030NaJy2NoznP1bCSNa-eIRs4Kkg",
@@ -541,7 +551,6 @@ function addDays(date, n){
 }
 function sameDate(a,b){ return toKey(a) === toKey(b); }
 
-// UI Helpers (Icons)
 const chevronRight = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
 const chevronLeft = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`;
 const lockIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
@@ -606,7 +615,6 @@ function renderMain(){
   const hosts = state.data.hosts || [];
   const assignments = state.data.assignments || {};
 
-  // Compute Active Week Metrics for Hosts Panel Dashboard
   const hostCountsThisWeek = {};
   hosts.forEach(h => hostCountsThisWeek[h] = 0);
   days.forEach(d => {
@@ -623,7 +631,6 @@ function renderMain(){
     const isToday = sameDate(d, today);
     const assignmentNode = assignments[key] || "";
     
-    // Support string structure or extended object structure backward-compatibly
     let assignedHost = "";
     let streamTopic = "";
     if (assignmentNode && typeof assignmentNode === 'object') {
