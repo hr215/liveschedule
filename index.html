@@ -1,262 +1,717 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Host Schedule (Synced)</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      min-height: 100vh;
-      background: #0D0D14;
-      color: #F0F0F5;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      padding: 32px 24px;
-      margin: 0;
-    }
-    .header { text-align: center; margin-bottom: 32px; }
-    .live-badge {
-      display: inline-block; background: #FF4D6D;
-      color: #fff; font-size: 11px; font-weight: 700;
-      letter-spacing: 3px; padding: 4px 12px; border-radius: 2px;
-      margin-bottom: 12px;
-    }
-    .title { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 1px; color: #F0F0F5; }
-    .subtitle { margin: 6px 0 0; color: #666; font-size: 13px; letter-spacing: 1px; }
-    
-    .legend-container {
-      display: flex; align-items: center; justify-content: center;
-      gap: 16px; margin-bottom: 28px; flex-wrap: wrap;
-    }
-    .host-pill {
-      display: flex; align-items: center; gap: 10px;
-      border-radius: 8px; padding: 8px 14px; font-size: 14px; font-weight: 600;
-    }
-    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .host-input {
-      background: transparent; border: none; color: #F0F0F5; 
-      font-size: 14px; font-weight: 600; outline: none; width: 120px; padding: 2px 0;
-    }
-    .btn {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-      color: #F0F0F5; border-radius: 8px; padding: 8px 16px;
-      font-size: 13px; cursor: pointer; font-weight: 600;
-    }
-    .btn-edit-active { background: #7B61FF; }
-    
-    .nav-container { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px; }
-    .nav-btn {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      color: #F0F0F5; border-radius: 8px; padding: 6px 14px; font-size: 18px;
-      cursor: pointer; line-height: 1;
-    }
-    .today-btn { font-size: 11px; padding: 6px 12px; background: rgba(123,97,255,0.15); border: 1px solid rgba(123,97,255,0.3); display: none; }
-    .week-label { font-size: 14px; color: #aaa; font-weight: 500; min-width: 200px; text-align: center; }
-    
-    .grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px; max-width: 900px; margin: 0 auto;
-    }
-    .card {
-      border-radius: 12px; padding: 20px 16px; cursor: pointer;
-      transition: all 0.15s ease; position: relative; user-select: none;
-    }
-    .today-badge { position: absolute; top: 8px; right: 10px; font-size: 9px; color: #FFD700; font-weight: 700; letter-spacing: 1px; }
-    .card-day { font-size: 11px; font-weight: 700; color: #888; letter-spacing: 2px; margin-bottom: 6px; }
-    .card-date { font-size: 20px; font-weight: 800; color: #F0F0F5; margin-bottom: 12px; }
-    .card-month { font-size: 13px; font-weight: 500; color: #666; margin-left: 4px; }
-    .card-assign { font-size: 13px; font-weight: 700; padding-top: 10px; }
-    
-    .footer { text-align: center; color: #333; font-size: 11px; margin-top: 32px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Host Schedule</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg-deep:#0A0C10;
+    --bg-panel:#13161C;
+    --bg-raised:#1B1F27;
+    --bg-raised-2:#20242E;
+    --text-primary:#F2F4F7;
+    --text-muted:#8B93A1;
+    --text-faint:#565D6B;
+    --accent-live:#FE2C55;
+    --accent-cyan:#25F4EE;
+    --border:#262B35;
+    --border-soft:#1D212A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(circle at 50% 0%, #14181F 0%, #0A0C10 55%);
+    color:var(--text-primary);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{font-family:'Oswald',sans-serif; letter-spacing:0.02em;}
+  .eyebrow{
+    font-family:'Oswald',sans-serif;
+    font-size:11px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+  }
+  button{font-family:'Inter',sans-serif; cursor:pointer;}
+  input,select{font-family:'Inter',sans-serif;}
+
+  /* ---------- layout shells ---------- */
+  .screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .app-shell{
+    min-height:100vh;
+    padding:20px 20px 60px;
+  }
+  .wrap{max-width:820px; margin:0 auto;}
+
+  /* ---------- chooser screen ---------- */
+  .chooser-card{
+    max-width:460px;
+    width:100%;
+    text-align:center;
+  }
+  .pulse-dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--accent-live);
+    display:inline-block;
+    box-shadow:0 0 0 0 rgba(254,44,85,0.55);
+    animation:pulse 1.8s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(254,44,85,0.55);}
+    70%{box-shadow:0 0 0 9px rgba(254,44,85,0);}
+    100%{box-shadow:0 0 0 0 rgba(254,44,85,0);}
+  }
+  .chooser-title{
+    font-size:38px;
+    font-weight:700;
+    margin:14px 0 6px;
+    text-transform:uppercase;
+  }
+  .chooser-sub{
+    color:var(--text-muted);
+    font-size:14px;
+    margin-bottom:36px;
+    line-height:1.5;
+  }
+  .choice-row{display:flex; flex-direction:column; gap:12px;}
+  .choice-btn{
+    border:1px solid var(--border);
+    background:var(--bg-panel);
+    color:var(--text-primary);
+    padding:20px 22px;
+    border-radius:10px;
+    text-align:left;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .choice-btn:hover{border-color:#3A4150; background:var(--bg-raised);}
+  .choice-btn .label{
+    font-family:'Oswald',sans-serif;
+    font-size:16px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+  }
+  .choice-btn .desc{color:var(--text-muted); font-size:12.5px; margin-top:4px;}
+  .choice-btn .arrow{color:var(--text-faint); font-size:20px;}
+  .choice-btn.admin-btn:hover{border-color:var(--accent-cyan);}
+  .choice-btn.view-btn:hover{border-color:var(--accent-live);}
+
+  /* ---------- password screen ---------- */
+  .pass-card{
+    max-width:360px;
+    width:100%;
+  }
+  .pass-card input{
+    width:100%;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    color:var(--text-primary);
+    padding:13px 14px;
+    border-radius:8px;
+    font-size:15px;
+    margin:18px 0 10px;
+    outline:none;
+  }
+  .pass-card input:focus{border-color:var(--accent-cyan);}
+  .primary-btn{
+    width:100%;
+    background:var(--accent-cyan);
+    color:#04191A;
+    border:none;
+    padding:13px 14px;
+    border-radius:8px;
+    font-weight:700;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .primary-btn:hover{filter:brightness(1.08);}
+  .error-text{color:var(--accent-live); font-size:13px; min-height:18px; margin-top:2px;}
+  .link-back{
+    color:var(--text-faint);
+    font-size:13px;
+    background:none;
+    border:none;
+    margin-top:18px;
+    text-decoration:underline;
+  }
+
+  /* ---------- header ---------- */
+  .top-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    margin-bottom:26px;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .title-block .eyebrow{margin-bottom:6px;}
+  .title-block h1{
+    font-size:26px;
+    margin:0;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .mode-tag{
+    font-family:'Oswald',sans-serif;
+    font-size:11px;
+    letter-spacing:0.1em;
+    padding:4px 9px;
+    border-radius:5px;
+    text-transform:uppercase;
+  }
+  .mode-tag.view{background:rgba(254,44,85,0.12); color:var(--accent-live); border:1px solid rgba(254,44,85,0.35);}
+  .mode-tag.admin{background:rgba(37,244,238,0.1); color:var(--accent-cyan); border:1px solid rgba(37,244,238,0.35);}
+  .sync-status{
+    display:flex; align-items:center; gap:8px;
+    font-size:12px; color:var(--text-muted);
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    padding:8px 12px;
+    border-radius:8px;
+  }
+  .sync-dot{width:7px;height:7px;border-radius:50%; background:#3DDC84;}
+  .exit-btn{
+    background:none; border:1px solid var(--border); color:var(--text-muted);
+    padding:8px 12px; border-radius:8px; font-size:12.5px;
+  }
+  .exit-btn:hover{color:var(--text-primary); border-color:#3A4150;}
+  .header-right{display:flex; align-items:center; gap:10px;}
+
+  /* ---------- admin tab nav ---------- */
+  .tab-nav{
+    display:flex;
+    gap:6px;
+    margin-bottom:22px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:0;
+  }
+  .tab-btn{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-family:'Oswald',sans-serif;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    padding:10px 4px;
+    margin-right:22px;
+    border-bottom:2px solid transparent;
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .tab-btn .tab-count{
+    background:var(--bg-raised);
+    color:var(--text-faint);
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    padding:1px 7px;
+    border-radius:10px;
+  }
+  .tab-btn:hover{color:var(--text-primary);}
+  .tab-btn.active{color:var(--accent-cyan); border-bottom-color:var(--accent-cyan);}
+  .tab-btn.active .tab-count{color:var(--accent-cyan); background:rgba(37,244,238,0.12);}
+
+  /* ---------- week nav ---------- */
+  .week-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:18px;
+  }
+  .nav-btn{
+    background:var(--bg-raised); border:1px solid var(--border); color:var(--text-primary);
+    width:32px;height:32px; border-radius:7px; font-size:15px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .nav-btn:hover{border-color:var(--accent-cyan);}
+  .week-label{font-family:'Oswald',sans-serif; font-size:14px; letter-spacing:0.03em; text-align:center;}
+  .today-btn{
+    background:none; border:1px solid var(--border); color:var(--text-muted);
+    font-size:11.5px; padding:6px 10px; border-radius:6px; text-transform:uppercase; letter-spacing:0.05em;
+  }
+  .today-btn:hover{color:var(--accent-live); border-color:var(--accent-live);}
+
+  /* ---------- day cards ---------- */
+  .day-list{display:flex; flex-direction:column; gap:8px; margin-bottom:30px;}
+  .day-card{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .day-card.is-today{border-color:rgba(254,44,85,0.5); background:linear-gradient(90deg, rgba(254,44,85,0.07), transparent 60%);}
+  .day-date{width:96px; flex-shrink:0;}
+  .day-name{font-family:'Oswald',sans-serif; font-size:13px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-primary);}
+  .day-num{font-size:12px; color:var(--text-muted); margin-top:2px;}
+  .day-divider{width:1px; align-self:stretch; background:var(--border-soft);}
+  .host-cell{flex:1; display:flex; align-items:center; gap:10px;}
+  .host-name-view{
+    font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:0.02em;
+  }
+  .host-name-view.empty{color:var(--text-faint); font-style:italic; font-family:'Inter',sans-serif; font-size:13px;}
+  .host-select{
+    flex:1;
+    background:var(--bg-raised);
+    color:var(--text-primary);
+    border:1px solid var(--border);
+    padding:9px 10px;
+    border-radius:7px;
+    font-size:13.5px;
+    outline:none;
+    max-width:260px;
+  }
+  .host-select:focus{border-color:var(--accent-cyan);}
+  .on-air{
+    font-family:'Oswald',sans-serif;
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    color:var(--accent-live);
+    background:rgba(254,44,85,0.12);
+    border:1px solid rgba(254,44,85,0.4);
+    padding:3px 8px;
+    border-radius:5px;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    flex-shrink:0;
+  }
+  .on-air .pulse-dot{width:6px;height:6px;}
+
+  /* ---------- master list panel ---------- */
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
+  }
+  .panel h2{
+    font-family:'Oswald',sans-serif;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin:0 0 14px;
+    color:var(--text-muted);
+  }
+  .host-chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;}
+  .host-chip{
+    display:flex; align-items:center; gap:8px;
+    background:var(--bg-raised);
+    border:1px solid var(--border);
+    padding:7px 8px 7px 12px;
+    border-radius:20px;
+    font-size:13px;
+  }
+  .host-chip button{
+    background:none; border:none; color:var(--text-faint);
+    width:18px;height:18px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; line-height:1;
+  }
+  .host-chip button:hover{color:var(--accent-live); background:rgba(254,44,85,0.12);}
+  .add-host-row{display:flex; gap:8px;}
+  .add-host-row input{
+    flex:1;
+    background:var(--bg-raised);
+    border:1px solid var(--border);
+    color:var(--text-primary);
+    padding:10px 12px;
+    border-radius:7px;
+    font-size:13.5px;
+    outline:none;
+  }
+  .add-host-row input:focus{border-color:var(--accent-cyan);}
+  .add-btn{
+    background:var(--accent-cyan);
+    color:#04191A;
+    border:none;
+    padding:0 16px;
+    border-radius:7px;
+    font-weight:700;
+    font-size:13px;
+  }
+  .empty-hosts{color:var(--text-faint); font-size:13px; font-style:italic;}
+  .footnote{
+    color:var(--text-faint);
+    font-size:11.5px;
+    margin-top:22px;
+    text-align:center;
+    line-height:1.6;
+  }
+</style>
 </head>
 <body>
 
-  <div class="header">
-    <div class="live-badge">● LIVE</div>
-    <h1 class="title">HOST SCHEDULE</h1>
-    <p class="subtitle">11:00 PM – 12:00 AM</p>
-  </div>
+<div id="root"></div>
 
-  <div class="legend-container">
-    <div id="pill-A" class="host-pill">
-      <div class="dot" style="background: #7B61FF;"></div>
-      <span id="display-A">Host A</span>
+<script type="text/javascript">
+const STORAGE_KEY = "live-host-schedule-v1";
+const ADMIN_PASSWORD = "NAN2221#";
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"]; // cycle: Sun -> Fri
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+let state = {
+  screen: "select",     // select | admin-pass | main
+  isAdmin: false,
+  passError: "",
+  data: { hosts: [], assignments: {} },
+  weekStart: getSundayOf(new Date()),
+  synced: false,
+  newHostName: "",
+  adminPage: "schedule",   // schedule | masters (admin only)
+};
+
+function pad(n){ return n < 10 ? "0"+n : ""+n; }
+function toKey(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function getSundayOf(date){
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+function addDays(date, n){
+  const d = new Date(date);
+  d.setDate(d.getDate()+n);
+  return d;
+}
+function sameDate(a,b){ return toKey(a) === toKey(b); }
+
+function render(){
+  const root = document.getElementById("root");
+  if(state.screen === "select") root.innerHTML = renderChooser();
+  else if(state.screen === "admin-pass") root.innerHTML = renderPassword();
+  else root.innerHTML = renderMain();
+  attachHandlers();
+}
+
+function renderChooser(){
+  return `
+  <div class="screen">
+    <div class="chooser-card">
+      <span class="pulse-dot"></span>
+      <div class="chooser-title display">Live Host Schedule</div>
+      <div class="chooser-sub">Weekly broadcast roster · Sunday&nbsp;&ndash;&nbsp;Friday cycle</div>
+      <div class="choice-row">
+        <button class="choice-btn view-btn" data-action="go-view">
+          <div>
+            <div class="label">Schedule View</div>
+            <div class="desc">Open access · view only, no login needed</div>
+          </div>
+          <div class="arrow">&rarr;</div>
+        </button>
+        <button class="choice-btn admin-btn" data-action="go-admin-pass">
+          <div>
+            <div class="label">Admin</div>
+            <div class="desc">Password required · edit hosts &amp; schedule</div>
+          </div>
+          <div class="arrow">&rarr;</div>
+        </button>
+      </div>
     </div>
-    <div id="pill-B" class="host-pill">
-      <div class="dot" style="background: #FF4D6D;"></div>
-      <span id="display-B">Host B</span>
+  </div>`;
+}
+
+function renderPassword(){
+  return `
+  <div class="screen">
+    <div class="pass-card">
+      <div class="eyebrow">Admin Access</div>
+      <div class="chooser-title display" style="font-size:26px; text-align:left; margin-top:8px;">Enter Password</div>
+      <input type="password" id="pass-input" placeholder="Password" autocomplete="off" />
+      <div class="error-text">${state.passError}</div>
+      <button class="primary-btn" data-action="submit-pass">Unlock Admin</button>
+      <br/>
+      <button class="link-back" data-action="back-to-select">&larr; Back</button>
     </div>
-    <button id="edit-btn" class="btn">Edit Names</button>
-  </div>
+  </div>`;
+}
 
-  <div class="nav-container">
-    <button id="prev-btn" class="nav-btn">‹</button>
-    <span id="week-label" class="week-label"></span>
-    <button id="next-btn" class="nav-btn">›</button>
-    <button id="today-btn" class="nav-btn today-btn">Today</button>
-  </div>
+function renderMain(){
+  const days = [];
+  for(let i=0;i<6;i++) days.push(addDays(state.weekStart,i));
+  const today = new Date();
+  const weekEnd = days[5];
+  const weekLabel = `${MONTH_NAMES[days[0].getMonth()]} ${days[0].getDate()} — ${weekEnd.getMonth()!==days[0].getMonth() ? MONTH_NAMES[weekEnd.getMonth()]+' ' : ''}${weekEnd.getDate()}, ${weekEnd.getFullYear()}`;
 
-  <div id="schedule-grid" class="grid"></div>
+  const hosts = state.data.hosts || [];
+  const assignments = state.data.assignments || {};
 
-  <p class="footer">Click any day to assign host · Changes sync globally instantly</p>
+  const dayCards = days.map((d,i)=>{
+    const key = toKey(d);
+    const isToday = sameDate(d, today);
+    const assigned = assignments[key] || "";
+    const onAirBadge = (isToday && assigned) ? `<span class="on-air"><span class="pulse-dot"></span>ON AIR</span>` : "";
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-    // Injecting your configuration parameters directly
-    const firebaseConfig = {
-      apiKey: "AIzaSyDQ9hs030NaJy2NoznP1bCSNa-eIRs4Kkg",
-      authDomain: "liveschedule-f6036.firebaseapp.com",
-      databaseURL: "https://liveschedule-f6036-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "liveschedule-f6036",
-      storageBucket: "liveschedule-f6036.firebasestorage.app",
-      messagingSenderId: "424904123728",
-      appId: "1:424904123728:web:3d2213361a78b2147b3855"
-    };
-
-    // Initialize Firebase Setup
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const scheduleRef = ref(db, "live-schedule-config");
-
-    // Local UI Application State
-    const DAY_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI"];
-    const DAY_INDICES = [0, 1, 2, 3, 4, 5];
-    const HOST_COLORS = {
-      A: { bg: "#7B61FF", light: "rgba(123,97,255,0.15)", border: "rgba(123,97,255,0.4)" },
-      B: { bg: "#FF4D6D", light: "rgba(255,77,109,0.15)", border: "rgba(255,77,109,0.4)" },
-      none: { bg: "#2A2A3E", light: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)" },
-    };
-
-    let state = {
-      hostA: "Host A",
-      hostB: "Host B",
-      assignments: {},
-      weekOffset: 0,
-      editMode: false
-    };
-
-    // Local Date Helper Logic
-    function toDateKey(date) {
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    let hostCell;
+    if(state.isAdmin){
+      const knownList = hosts.includes(assigned) || !assigned ? hosts : [assigned, ...hosts];
+      const options = ['<option value="">— No host assigned —</option>']
+        .concat(knownList.map(h => `<option value="${escapeAttr(h)}" ${h===assigned?'selected':''}>${escapeHtml(h)}</option>`))
+        .join("");
+      hostCell = `<select class="host-select" data-date="${key}" data-action="assign-host">${options}</select>`;
+    } else {
+      hostCell = assigned
+        ? `<span class="host-name-view">${escapeHtml(assigned)}</span>`
+        : `<span class="host-name-view empty">No host assigned</span>`;
     }
 
-    function getWeekDates(offsetWeeks) {
-      const today = new Date();
-      const sunday = new Date(today);
-      sunday.setDate(today.getDate() - today.getDay() + offsetWeeks * 7);
-      return DAY_INDICES.map((i) => {
-        const d = new Date(sunday);
-        d.setDate(sunday.getDate() + i);
-        return d;
+    return `
+    <div class="day-card ${isToday?'is-today':''}">
+      <div class="day-date">
+        <div class="day-name">${DAY_NAMES[i]}</div>
+        <div class="day-num">${MONTH_NAMES[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}</div>
+      </div>
+      <div class="day-divider"></div>
+      <div class="host-cell">${hostCell}${onAirBadge}</div>
+    </div>`;
+  }).join("");
+
+  const masterPanel = `
+    <div class="panel">
+      <h2>Master List of Live Hosts</h2>
+      <div class="host-chip-row">
+        ${hosts.length ? hosts.map(h => `
+          <div class="host-chip">
+            <span>${escapeHtml(h)}</span>
+            <button data-action="remove-host" data-host="${escapeAttr(h)}" title="Remove host">&times;</button>
+          </div>`).join("") : '<div class="empty-hosts">No hosts added yet — add your first host below.</div>'}
+      </div>
+      <div class="add-host-row">
+        <input id="new-host-input" type="text" placeholder="Host name" value="${escapeAttr(state.newHostName)}" />
+        <button class="add-btn" data-action="add-host">Add Host</button>
+      </div>
+    </div>`;
+
+  const schedulePage = `
+    <div class="week-nav">
+      <button class="nav-btn" data-action="prev-week">&larr;</button>
+      <div>
+        <div class="week-label">${weekLabel}</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="today-btn" data-action="this-week">This Week</button>
+        <button class="nav-btn" data-action="next-week">&rarr;</button>
+      </div>
+    </div>
+    <div class="day-list">${dayCards}</div>`;
+
+  const tabNav = state.isAdmin ? `
+    <div class="tab-nav">
+      <button class="tab-btn ${state.adminPage==='schedule'?'active':''}" data-action="tab-schedule">Schedule</button>
+      <button class="tab-btn ${state.adminPage==='masters'?'active':''}" data-action="tab-masters">Master List <span class="tab-count">${hosts.length}</span></button>
+    </div>` : "";
+
+  let pageContent;
+  if(!state.isAdmin){
+    pageContent = schedulePage;
+  } else if(state.adminPage === "masters"){
+    pageContent = masterPanel;
+  } else {
+    pageContent = schedulePage;
+  }
+
+  const footnoteText = state.isAdmin
+    ? (state.adminPage === "masters"
+        ? "Changes sync automatically across all devices and users."
+        : "Changes sync automatically across all devices and users. Editing one date only affects that date — other weeks stay as they are.")
+    : "Changes sync automatically across all devices and users.";
+
+  return `
+  <div class="app-shell">
+    <div class="wrap">
+      <div class="top-row">
+        <div class="title-block">
+          <div class="eyebrow">Broadcast Roster</div>
+          <h1 class="display">Live Host Schedule
+            <span class="mode-tag ${state.isAdmin?'admin':'view'}">${state.isAdmin?'Admin':'View Only'}</span>
+          </h1>
+        </div>
+        <div class="header-right">
+          <div class="sync-status"><span class="sync-dot"></span>${state.synced ? 'Synced' : 'Syncing…'}</div>
+          <button class="exit-btn" data-action="exit-to-select">Exit</button>
+        </div>
+      </div>
+
+      ${tabNav}
+
+      ${pageContent}
+
+      <div class="footnote">${footnoteText}</div>
+    </div>
+  </div>`;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+function attachHandlers(){
+  document.querySelectorAll("[data-action]").forEach(el=>{
+    const action = el.getAttribute("data-action");
+    if(action === "assign-host"){
+      el.addEventListener("change", async (e)=>{
+        const date = el.getAttribute("data-date");
+        const val = e.target.value;
+        if(val) state.data.assignments[date] = val;
+        else delete state.data.assignments[date];
+        await saveData();
       });
+      return;
     }
-
-    function isToday(date) {
-      return toDateKey(date) === toDateKey(new Date());
-    }
-
-    // Push local UI data changes to Firebase Realtime Cloud
-    async function syncToFirebase() {
-      try {
-        await set(scheduleRef, {
-          hostA: state.hostA,
-          hostB: state.hostB,
-          assignments: state.assignments || {}
-        });
-      } catch (err) {
-        console.error("Firebase database communication error:", err);
+    el.addEventListener("click", async (e)=>{
+      if(action === "go-view"){
+        state.isAdmin = false;
+        state.screen = "main";
+        await loadData();
+        render();
+      } else if(action === "go-admin-pass"){
+        state.screen = "admin-pass";
+        state.passError = "";
+        render();
+        setTimeout(()=>{ const i=document.getElementById("pass-input"); if(i) i.focus(); },0);
+      } else if(action === "back-to-select"){
+        state.screen = "select";
+        render();
+      } else if(action === "submit-pass"){
+        const val = document.getElementById("pass-input").value;
+        if(val === ADMIN_PASSWORD){
+          state.isAdmin = true;
+          state.screen = "main";
+          state.adminPage = "schedule";
+          state.passError = "";
+          await loadData();
+          render();
+        } else {
+          state.passError = "Incorrect password. Try again.";
+          render();
+          setTimeout(()=>{ const i=document.getElementById("pass-input"); if(i) i.focus(); },0);
+        }
+      } else if(action === "exit-to-select"){
+        state.isAdmin = false;
+        state.screen = "select";
+        render();
+      } else if(action === "prev-week"){
+        state.weekStart = addDays(state.weekStart, -7);
+        render();
+      } else if(action === "next-week"){
+        state.weekStart = addDays(state.weekStart, 7);
+        render();
+      } else if(action === "this-week"){
+        state.weekStart = getSundayOf(new Date());
+        render();
+      } else if(action === "tab-schedule"){
+        state.adminPage = "schedule";
+        render();
+      } else if(action === "tab-masters"){
+        state.adminPage = "masters";
+        render();
+      } else if(action === "add-host"){
+        const input = document.getElementById("new-host-input");
+        const name = (input.value || "").trim();
+        if(!name) return;
+        if(state.data.hosts.includes(name)){
+          input.value = "";
+          return;
+        }
+        state.data.hosts.push(name);
+        input.value = "";
+        await saveData();
+      } else if(action === "remove-host"){
+        const host = el.getAttribute("data-host");
+        state.data.hosts = state.data.hosts.filter(h => h !== host);
+        await saveData();
       }
-    }
-
-    // Subscribe to Firebase data changes for Realtime global rendering
-    onValue(scheduleRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        state.hostA = data.hostA || "Host A";
-        state.hostB = data.hostB || "Host B";
-        state.assignments = data.assignments || {};
-      }
-      render();
     });
+  });
 
-    function cycleAssignment(dateKey) {
-      const cur = state.assignments[dateKey] || "none";
-      state.assignments[dateKey] = cur === "none" ? "A" : cur === "A" ? "B" : "none";
-      syncToFirebase();
+  // enter key submits password
+  const passInput = document.getElementById("pass-input");
+  if(passInput){
+    passInput.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter") document.querySelector('[data-action="submit-pass"]').click();
+    });
+  }
+  const newHostInput = document.getElementById("new-host-input");
+  if(newHostInput){
+    newHostInput.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter") document.querySelector('[data-action="add-host"]').click();
+    });
+  }
+}
+
+async function loadData(){
+  try{
+    const result = await window.storage.get(STORAGE_KEY, true);
+    if(result && result.value){
+      state.data = JSON.parse(result.value);
+      if(!state.data.hosts) state.data.hosts = [];
+      if(!state.data.assignments) state.data.assignments = {};
+    } else {
+      state.data = { hosts: [], assignments: {} };
     }
+    state.synced = true;
+  } catch(err){
+    // key doesn't exist yet — initialize
+    state.data = { hosts: [], assignments: {} };
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state.data), true);
+      state.synced = true;
+    } catch(e2){
+      state.synced = false;
+    }
+  }
+}
 
-    // Dynamic Client Render Cycle Engine
-    function render() {
-      const colorA = HOST_COLORS.A;
-      const colorB = HOST_COLORS.B;
+async function saveData(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(state.data), true);
+    state.synced = true;
+  } catch(err){
+    state.synced = false;
+  }
+  render();
+}
 
-      const pillA = document.getElementById("pill-A");
-      const pillB = document.getElementById("pill-B");
-      pillA.style.background = colorA.light; pillA.style.border = `1px solid ${colorA.border}`;
-      pillB.style.background = colorB.light; pillB.style.border = `1px solid ${colorB.border}`;
-
-      const displayA = document.getElementById("display-A");
-      const displayB = document.getElementById("display-B");
-
-      if (state.editMode) {
-        displayA.innerHTML = `<input id="input-A" class="host-input" style="border-bottom: 1px solid ${colorA.bg}" value="${state.hostA}">`;
-        displayB.innerHTML = `<input id="input-B" class="host-input" style="border-bottom: 1px solid ${colorB.bg}" value="${state.hostB}">`;
-        
-        document.getElementById("input-A").addEventListener("input", (e) => { state.hostA = e.target.value; syncToFirebase(); });
-        document.getElementById("input-B").addEventListener("input", (e) => { state.hostB = e.target.value; syncToFirebase(); });
-      } else {
-        displayA.textContent = state.hostA;
-        displayB.textContent = state.hostB;
+// background polling so all devices reflect the latest shared state
+setInterval(async ()=>{
+  if(state.screen !== "main") return;
+  try{
+    const result = await window.storage.get(STORAGE_KEY, true);
+    if(result && result.value){
+      const fresh = JSON.parse(result.value);
+      // avoid clobbering an in-progress dropdown interaction: only re-render if data actually changed
+      if(JSON.stringify(fresh) !== JSON.stringify(state.data)){
+        state.data = fresh;
+        state.synced = true;
+        render();
       }
-
-      const editBtn = document.getElementById("edit-btn");
-      editBtn.textContent = state.editMode ? "Done" : "Edit Names";
-      editBtn.className = state.editMode ? "btn btn-edit-active" : "btn";
-
-      const weekDates = getWeekDates(state.weekOffset);
-      document.getElementById("week-label").textContent = `${weekDates[0].toLocaleDateString("en-MY", { day: "2-digit", month: "short" })} – ${weekDates[5].toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}`;
-      document.getElementById("today-btn").style.display = state.weekOffset !== 0 ? "inline-block" : "none";
-
-      const grid = document.getElementById("schedule-grid");
-      grid.innerHTML = "";
-
-      weekDates.forEach((date, i) => {
-        const dateKey = toDateKey(date);
-        const assigned = state.assignments[dateKey] || "none";
-        const c = HOST_COLORS[assigned] || HOST_COLORS.none;
-        const today = isToday(date);
-        const hostName = assigned === "A" ? state.hostA : assigned === "B" ? state.hostB : "—";
-
-        const card = document.createElement("div");
-        card.className = "card";
-        card.style.background = c.light;
-        card.style.border = `1px solid ${today ? "#FFD700" : c.border}`;
-        card.style.boxShadow = today ? "0 0 0 2px rgba(255,215,0,0.3)" : "none";
-
-        card.innerHTML = `
-          ${today ? '<div class="today-badge">TODAY</div>' : ''}
-          <div class="card-day">${DAY_SHORT[i]}</div>
-          <div class="card-date">
-            ${date.getDate()}<span class="card-month"> ${date.toLocaleDateString("en-MY", { month: "short" })}</span>
-          </div>
-          <div class="card-assign" style="color: ${assigned === 'none' ? '#444' : c.bg}; border-top: 1px solid ${c.border};">
-            ${assigned === "none" ? "No Host" : hostName}
-          </div>
-        `;
-
-        card.addEventListener("click", () => cycleAssignment(dateKey));
-        grid.appendChild(card);
-      });
     }
+  } catch(err){ /* ignore transient errors */ }
+}, 4000);
 
-    // Static Layout Navigation DOM Attachments
-    document.getElementById("edit-btn").addEventListener("click", () => { state.editMode = !state.editMode; render(); });
-    document.getElementById("prev-btn").addEventListener("click", () => { state.weekOffset--; render(); });
-    document.getElementById("next-btn").addEventListener("click", () => { state.weekOffset++; render(); });
-    document.getElementById("today-btn").addEventListener("click", () => { state.weekOffset = 0; render(); });
-  </script>
+render();
+</script>
 </body>
 </html>
