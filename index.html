@@ -584,6 +584,7 @@ function attachHandlers(){
       if(action === "go-view"){
         state.isAdmin = false;
         state.screen = "main";
+        state.synced = false;
         await loadData();
         render();
       } else if(action === "go-admin-pass"){
@@ -695,21 +696,32 @@ async function saveData(){
 }
 
 // background polling so all devices reflect the latest shared state
-setInterval(async ()=>{
+async function pollForUpdates(){
   if(state.screen !== "main") return;
   try{
     const result = await window.storage.get(STORAGE_KEY, true);
     if(result && result.value){
       const fresh = JSON.parse(result.value);
-      // avoid clobbering an in-progress dropdown interaction: only re-render if data actually changed
       if(JSON.stringify(fresh) !== JSON.stringify(state.data)){
         state.data = fresh;
+        state.synced = true;
+        render();
+      } else if(!state.synced){
         state.synced = true;
         render();
       }
     }
   } catch(err){ /* ignore transient errors */ }
-}, 4000);
+}
+
+setInterval(pollForUpdates, 2000);
+
+// refresh immediately the moment the tab/window regains focus,
+// instead of waiting for the next poll tick
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "visible") pollForUpdates();
+});
+window.addEventListener("focus", pollForUpdates);
 
 render();
 </script>
