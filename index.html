@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Host & Content Schedule</title>
+<title>Live Host Schedule</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
@@ -52,7 +52,7 @@
     min-height:100vh;
     padding:20px 20px 60px;
   }
-  .wrap{max-width:860px; margin:0 auto;}
+  .wrap{max-width:820px; margin:0 auto;}
 
   /* ---------- chooser screen ---------- */
   .chooser-card{
@@ -105,8 +105,7 @@
     letter-spacing:0.05em;
   }
   .choice-btn .desc{color:var(--text-muted); font-size:12.5px; margin-top:4px;}
-  .choice-btn svg{color:var(--text-faint); transition: transform 0.2s; flex-shrink: 0;}
-  .choice-btn:hover svg{color:var(--text-primary); transform: translateX(4px);}
+  .choice-btn .arrow{color:var(--text-faint); font-size:20px;}
   .choice-btn.admin-btn:hover{border-color:var(--accent-cyan);}
   .choice-btn.view-btn:hover{border-color:var(--accent-live);}
 
@@ -138,10 +137,6 @@
     font-size:14px;
     text-transform:uppercase;
     letter-spacing:0.04em;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
   }
   .primary-btn:hover{filter:brightness(1.08);}
   .error-text{color:var(--accent-live); font-size:13px; min-height:18px; margin-top:2px;}
@@ -152,11 +147,7 @@
     border:none;
     margin-top:18px;
     text-decoration:underline;
-    display:inline-flex;
-    align-items:center;
-    gap:4px;
   }
-  .link-back:hover{color:var(--text-muted);}
 
   /* ---------- header ---------- */
   .top-row{
@@ -285,7 +276,7 @@
   }
   .nav-btn{
     background:var(--bg-raised); border:1px solid var(--border); color:var(--text-primary);
-    width:32px;height:32px; border-radius:7px;
+    width:32px;height:32px; border-radius:7px; font-size:15px;
     display:flex; align-items:center; justify-content:center;
   }
   .nav-btn:hover{border-color:var(--accent-cyan);}
@@ -302,55 +293,21 @@
     background:var(--bg-panel);
     border:1px solid var(--border);
     border-radius:10px;
-    padding:16px;
-    display:grid;
-    grid-template-columns: 100px 1px 1fr;
-    gap:18px;
+    padding:14px 16px;
+    display:flex;
     align-items:center;
+    gap:16px;
   }
-  .day-card.is-today{border-color:rgba(254,44,85,0.5); background:linear-gradient(90deg, rgba(254,44,85,0.06), transparent 70%);}
-  .day-date{flex-shrink:0;}
+  .day-card.is-today{border-color:rgba(254,44,85,0.5); background:linear-gradient(90deg, rgba(254,44,85,0.07), transparent 60%);}
+  .day-date{width:96px; flex-shrink:0;}
   .day-name{font-family:'Oswald',sans-serif; font-size:13px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-primary);}
   .day-num{font-size:12px; color:var(--text-muted); margin-top:2px;}
   .day-divider{width:1px; align-self:stretch; background:var(--border-soft);}
-  
-  .management-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap:12px;
-    align-items:center;
-    width:100%;
-  }
-  .assignment-block{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex:1;
-    min-width: 240px;
-  }
-  .topic-block{
-    flex:1.2;
-    min-width: 260px;
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-
+  .host-cell{flex:1; display:flex; align-items:center; gap:10px;}
   .host-name-view{
     font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:0.02em;
   }
   .host-name-view.empty{color:var(--text-faint); font-style:italic; font-family:'Inter',sans-serif; font-size:13px;}
-  
-  .topic-text-view {
-    font-size:13px;
-    color:var(--text-muted);
-    line-height:1.4;
-  }
-  .topic-text-view.empty {
-    color:var(--text-faint);
-    font-style:italic;
-  }
-
   .host-select{
     flex:1;
     background:var(--bg-raised);
@@ -360,22 +317,9 @@
     border-radius:7px;
     font-size:13.5px;
     outline:none;
+    max-width:260px;
   }
   .host-select:focus{border-color:var(--accent-cyan);}
-
-  .topic-input{
-    flex:1;
-    background:var(--bg-raised);
-    color:var(--text-primary);
-    border:1px solid var(--border);
-    padding:9px 12px;
-    border-radius:7px;
-    font-size:13px;
-    outline:none;
-    transition: border-color 0.15s;
-  }
-  .topic-input:focus{border-color:var(--accent-cyan); background:var(--bg-raised-2);}
-
   .on-air{
     font-family:'Oswald',sans-serif;
     font-size:10.5px;
@@ -412,28 +356,15 @@
     display:flex; align-items:center; gap:8px;
     background:var(--bg-raised);
     border:1px solid var(--border);
-    padding:6px 6px 6px 12px;
+    padding:7px 8px 7px 12px;
     border-radius:20px;
     font-size:13px;
   }
-  .host-week-count {
-    font-size: 11px;
-    background: var(--bg-panel);
-    color: var(--text-muted);
-    padding: 2px 6px;
-    border-radius: 10px;
-    border: 1px solid var(--border-soft);
-  }
-  .host-week-count.active-host {
-    color: var(--accent-cyan);
-    border-color: rgba(37,244,238,0.25);
-  }
   .host-chip button{
     background:none; border:none; color:var(--text-faint);
-    width:20px;height:20px; border-radius:50%;
+    width:18px;height:18px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
-    font-size:14px; line-height:1;
-    padding: 0;
+    font-size:13px; line-height:1;
   }
   .host-chip button:hover{color:var(--accent-live); background:rgba(254,44,85,0.12);}
   .add-host-row{display:flex; gap:8px;}
@@ -471,11 +402,10 @@
 
 <div id="root"></div>
 
-<!-- Standard Browser Compatibility Loading Scripts -->
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getDatabase, ref, set, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-<script>
 const firebaseConfig = {
   apiKey: "AIzaSyDQ9hs030NaJy2NoznP1bCSNa-eIRs4Kkg",
   authDomain: "liveschedule-f6036.firebaseapp.com",
@@ -486,34 +416,34 @@ const firebaseConfig = {
   appId: "1:424904123728:web:3d2213361a78b2147b3855"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const scheduleRef = db.ref("liveHostSchedule");
-const hostsRef = db.ref("liveHostSchedule/hosts");
-function assignmentRef(dateKey){ return db.ref("liveHostSchedule/assignments/" + dateKey); }
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getDatabase(firebaseApp);
+const scheduleRef = ref(db, "liveHostSchedule");
+const hostsRef = ref(db, "liveHostSchedule/hosts");
+function assignmentRef(dateKey){ return ref(db, "liveHostSchedule/assignments/" + dateKey); }
 
 const ADMIN_PASSWORD = "NAN2221#";
-const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"]; 
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"]; // cycle: Sun -> Fri
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 let state = {
-  screen: "select", 
+  screen: "select",     // select | admin-pass | main
   isAdmin: false,
   passError: "",
   data: { hosts: [], assignments: {} },
   weekStart: getSundayOf(new Date()),
   synced: false,
   newHostName: "",
-  adminPage: "schedule", 
+  adminPage: "schedule",   // schedule | masters (admin only)
   dbReady: false,
-  connectionState: "connecting", 
-  saveState: "idle", 
+  connectionState: "connecting",  // connecting | connected | error
+  saveState: "idle",              // idle | saving | saved | error
   syncError: "",
 };
 
 function syncStatusHTML(){
   if(state.connectionState === "error"){
-    return `<span class="sync-dot bad"></span>Disconnected`;
+    return `<span class="sync-dot bad"></span>Connection failed`;
   }
   if(state.connectionState === "connecting"){
     return `<span class="sync-dot pending"></span>Connecting…`;
@@ -522,7 +452,7 @@ function syncStatusHTML(){
     return `<span class="sync-dot pending"></span>Saving…`;
   }
   if(state.saveState === "error"){
-    return `<span class="sync-dot bad"></span>Save error`;
+    return `<span class="sync-dot bad"></span>Save failed`;
   }
   return `<span class="sync-dot"></span>Synced`;
 }
@@ -542,10 +472,6 @@ function addDays(date, n){
 }
 function sameDate(a,b){ return toKey(a) === toKey(b); }
 
-const chevronRight = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
-const chevronLeft = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`;
-const lockIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
-
 function render(){
   const root = document.getElementById("root");
   if(state.screen === "select") root.innerHTML = renderChooser();
@@ -560,21 +486,21 @@ function renderChooser(){
     <div class="chooser-card">
       <span class="pulse-dot"></span>
       <div class="chooser-title display">Live Host Schedule</div>
-      <div class="chooser-sub">Weekly broadcast roster & stream planner<br/>Sunday&nbsp;&ndash;&nbsp;Friday cycle</div>
+      <div class="chooser-sub">Weekly broadcast roster · Sunday&nbsp;&ndash;&nbsp;Friday cycle</div>
       <div class="choice-row">
         <button class="choice-btn view-btn" data-action="go-view">
           <div>
-            <div class="label">Schedule Matrix</div>
-            <div class="desc">Open dashboard view · dynamic stream details</div>
+            <div class="label">Schedule View</div>
+            <div class="desc">Open access · view only, no login needed</div>
           </div>
-          ${chevronRight}
+          <div class="arrow">&rarr;</div>
         </button>
         <button class="choice-btn admin-btn" data-action="go-admin-pass">
           <div>
-            <div class="label">Admin Management</div>
-            <div class="desc">Password protected · edit hosts & content matrix</div>
+            <div class="label">Admin</div>
+            <div class="desc">Password required · edit hosts &amp; schedule</div>
           </div>
-          ${chevronRight}
+          <div class="arrow">&rarr;</div>
         </button>
       </div>
     </div>
@@ -585,13 +511,13 @@ function renderPassword(){
   return `
   <div class="screen">
     <div class="pass-card">
-      <div class="eyebrow">Authorization</div>
-      <div class="chooser-title display" style="font-size:26px; text-align:left; margin-top:8px;">Enter Admin Password</div>
-      <input type="password" id="pass-input" placeholder="••••••••" autocomplete="off" />
+      <div class="eyebrow">Admin Access</div>
+      <div class="chooser-title display" style="font-size:26px; text-align:left; margin-top:8px;">Enter Password</div>
+      <input type="password" id="pass-input" placeholder="Password" autocomplete="off" />
       <div class="error-text">${state.passError}</div>
-      <button class="primary-btn" data-action="submit-pass">${lockIcon} Unlock Admin</button>
+      <button class="primary-btn" data-action="submit-pass">Unlock Admin</button>
       <br/>
-      <button class="link-back" data-action="back-to-select">${chevronLeft} Back</button>
+      <button class="link-back" data-action="back-to-select">&larr; Back</button>
     </div>
   </div>`;
 }
@@ -606,135 +532,95 @@ function renderMain(){
   const hosts = state.data.hosts || [];
   const assignments = state.data.assignments || {};
 
-  const hostCountsThisWeek = {};
-  hosts.forEach(h => hostCountsThisWeek[h] = 0);
-  days.forEach(d => {
-    const key = toKey(d);
-    const assignedObj = assignments[key];
-    const assignedHost = (assignedObj && typeof assignedObj === 'object') ? assignedObj.host : assignedObj;
-    if (assignedHost && hostCountsThisWeek[assignedHost] !== undefined) {
-      hostCountsThisWeek[assignedHost]++;
-    }
-  });
-
   const dayCards = days.map((d,i)=>{
     const key = toKey(d);
     const isToday = sameDate(d, today);
-    const assignmentNode = assignments[key] || "";
-    
-    let assignedHost = "";
-    let streamTopic = "";
-    if (assignmentNode && typeof assignmentNode === 'object') {
-      assignedHost = assignmentNode.host || "";
-      streamTopic = assignmentNode.topic || "";
-    } else {
-      assignedHost = assignmentNode;
-    }
+    const assigned = assignments[key] || "";
+    const onAirBadge = (isToday && assigned) ? `<span class="on-air"><span class="pulse-dot"></span>ON AIR</span>` : "";
 
-    const onAirBadge = (isToday && assignedHost) ? `<span class="on-air"><span class="pulse-dot"></span>LIVE</span>` : "";
-
-    let managementRowHTML = "";
+    let hostCell;
     if(state.isAdmin){
-      const knownList = hosts.includes(assignedHost) || !assignedHost ? hosts : [assignedHost, ...hosts];
-      const options = ['<option value="">— Unassigned —</option>']
-        .concat(knownList.map(h => `<option value="${escapeAttr(h)}" ${h===assignedHost?'selected':''}>${escapeHtml(h)}</option>`))
+      const knownList = hosts.includes(assigned) || !assigned ? hosts : [assigned, ...hosts];
+      const options = ['<option value="">— No host assigned —</option>']
+        .concat(knownList.map(h => `<option value="${escapeAttr(h)}" ${h===assigned?'selected':''}>${escapeHtml(h)}</option>`))
         .join("");
-
-      managementRowHTML = `
-      <div class="management-row">
-        <div class="assignment-block">
-          <select class="host-select" data-date="${key}" data-action="assign-host">${options}</select>
-          ${onAirBadge}
-        </div>
-        <div class="topic-block">
-          <input type="text" class="topic-input" data-date="${key}" data-action="update-topic" placeholder="Add broadcast topic or notes..." value="${escapeAttr(streamTopic)}" />
-        </div>
-      </div>`;
+      hostCell = `<select class="host-select" data-date="${key}" data-action="assign-host">${options}</select>`;
     } else {
-      const hostDisplay = assignedHost 
-        ? `<span class="host-name-view">${escapeHtml(assignedHost)}</span>` 
-        : `<span class="host-name-view empty">Unassigned</span>`;
-      
-      const topicDisplay = streamTopic 
-        ? `<span class="topic-text-view">${escapeHtml(streamTopic)}</span>`
-        : `<span class="topic-text-view empty">No topic set</span>`;
-
-      managementRowHTML = `
-      <div class="management-row">
-        <div class="assignment-block">
-          ${hostDisplay}
-          ${onAirBadge}
-        </div>
-        <div class="topic-block">
-          ${topicDisplay}
-        </div>
-      </div>`;
+      hostCell = assigned
+        ? `<span class="host-name-view">${escapeHtml(assigned)}</span>`
+        : `<span class="host-name-view empty">No host assigned</span>`;
     }
 
     return `
     <div class="day-card ${isToday?'is-today':''}">
       <div class="day-date">
         <div class="day-name">${DAY_NAMES[i]}</div>
-        <div class="day-num">${MONTH_NAMES[d.getMonth()].slice(0,3)} ${d.getDate()}</div>
+        <div class="day-num">${MONTH_NAMES[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}</div>
       </div>
       <div class="day-divider"></div>
-      ${managementRowHTML}
+      <div class="host-cell">${hostCell}${onAirBadge}</div>
     </div>`;
   }).join("");
 
   const masterPanel = `
     <div class="panel">
-      <h2>Active Network Roster & Weekly Loads</h2>
+      <h2>Master List of Live Hosts</h2>
       <div class="host-chip-row">
-        ${hosts.length ? hosts.map(h => {
-          const count = hostCountsThisWeek[h] || 0;
-          return `
+        ${hosts.length ? hosts.map(h => `
           <div class="host-chip">
             <span>${escapeHtml(h)}</span>
-            <span class="host-week-count ${count > 0 ? 'active-host' : ''}" title="Assignments this selected week">${count}w</span>
             <button data-action="remove-host" data-host="${escapeAttr(h)}" title="Remove host">&times;</button>
-          </div>`;
-        }).join("") : '<div class="empty-hosts">No active team hosts recorded. Add your first team member below.</div>'}
+          </div>`).join("") : '<div class="empty-hosts">No hosts added yet — add your first host below.</div>'}
       </div>
       <div class="add-host-row">
-        <input id="new-host-input" type="text" placeholder="Legal or profile handle name" value="${escapeAttr(state.newHostName)}" />
+        <input id="new-host-input" type="text" placeholder="Host name" value="${escapeAttr(state.newHostName)}" />
         <button class="add-btn" data-action="add-host">Add Host</button>
       </div>
     </div>`;
 
   const schedulePage = `
     <div class="week-nav">
-      <button class="nav-btn" data-action="prev-week" title="Previous Week">${chevronLeft}</button>
+      <button class="nav-btn" data-action="prev-week">&larr;</button>
       <div>
         <div class="week-label">${weekLabel}</div>
       </div>
       <div style="display:flex; gap:8px;">
-        <button class="today-btn" data-action="this-week">Current Week</button>
-        <button class="nav-btn" data-action="next-week" title="Next Week">${chevronRight}</button>
+        <button class="today-btn" data-action="this-week">This Week</button>
+        <button class="nav-btn" data-action="next-week">&rarr;</button>
       </div>
     </div>
     <div class="day-list">${dayCards}</div>`;
 
   const tabNav = state.isAdmin ? `
     <div class="tab-nav">
-      <button class="tab-btn ${state.adminPage==='schedule'?'active':''}" data-action="tab-schedule">Live Matrix Planner</button>
-      <button class="tab-btn ${state.adminPage==='masters'?'active':''}" data-action="tab-masters">Host Profiles & Metrics <span class="tab-count">${hosts.length}</span></button>
+      <button class="tab-btn ${state.adminPage==='schedule'?'active':''}" data-action="tab-schedule">Schedule</button>
+      <button class="tab-btn ${state.adminPage==='masters'?'active':''}" data-action="tab-masters">Master List <span class="tab-count">${hosts.length}</span></button>
     </div>` : "";
 
-  let pageContent = (!state.isAdmin || state.adminPage === "schedule") ? schedulePage : masterPanel;
+  let pageContent;
+  if(!state.isAdmin){
+    pageContent = schedulePage;
+  } else if(state.adminPage === "masters"){
+    pageContent = masterPanel;
+  } else {
+    pageContent = schedulePage;
+  }
 
   const footnoteText = state.isAdmin
-    ? "Realtime Matrix Control active. Content nodes modifications apply instantly across active view terminals."
-    : "Live schedule connection active. Terminal monitors modifications in real-time updates.";
+    ? (state.adminPage === "masters"
+        ? "Changes sync automatically across all devices and users."
+        : "Changes sync automatically across all devices and users. Editing one date only affects that date — other weeks stay as they are.")
+    : "Changes sync automatically across all devices and users.";
 
   const hasError = state.connectionState === "error" || state.saveState === "error";
   const errorBanner = hasError ? `
     <div class="sync-error-banner">
       <div>
-        <strong>${state.connectionState === "error" ? "Network connection interrupted." : "Database sync engine rejected payload modification."}</strong><br/>
-        ${state.syncError ? `<code>${escapeHtml(state.syncError)}</code>` : "System authorization anomaly details unrecorded."}
+        <strong>${state.connectionState === "error" ? "Could not connect to the database." : "Your last change did not save."}</strong><br/>
+        ${state.syncError ? `<code>${escapeHtml(state.syncError)}</code>` : "Unknown error."}
+        ${/permission/i.test(state.syncError||"") ? '<br/>This usually means the Firebase Database Rules are blocking read/write access.' : ''}
       </div>
-      <button class="retry-btn" data-action="retry-sync">Retry Sync</button>
+      <button class="retry-btn" data-action="retry-sync">Retry</button>
     </div>` : "";
 
   return `
@@ -742,19 +628,21 @@ function renderMain(){
     <div class="wrap">
       <div class="top-row">
         <div class="title-block">
-          <div class="eyebrow">On-Air Tracking Dashboard</div>
+          <div class="eyebrow">Broadcast Roster</div>
           <h1 class="display">Live Host Schedule
-            <span class="mode-tag ${state.isAdmin?'admin':'view'}">${state.isAdmin?'Admin Operator':'Monitor Mode'}</span>
+            <span class="mode-tag ${state.isAdmin?'admin':'view'}">${state.isAdmin?'Admin':'View Only'}</span>
           </h1>
         </div>
         <div class="header-right">
           <div class="sync-status">${syncStatusHTML()}</div>
-          <button class="exit-btn" data-action="exit-to-select">Disconnect View</button>
+          <button class="exit-btn" data-action="exit-to-select">Exit</button>
         </div>
       </div>
 
       ${errorBanner}
+
       ${tabNav}
+
       ${pageContent}
 
       <div class="footnote">${footnoteText}</div>
@@ -770,47 +658,16 @@ function escapeAttr(s){ return escapeHtml(s); }
 function attachHandlers(){
   document.querySelectorAll("[data-action]").forEach(el=>{
     const action = el.getAttribute("data-action");
-    
     if(action === "assign-host"){
       el.addEventListener("change", async (e)=>{
         const date = el.getAttribute("data-date");
         const val = e.target.value;
-        
-        let currentRecord = state.data.assignments[date] || { host: "", topic: "" };
-        if (typeof currentRecord !== 'object') currentRecord = { host: currentRecord, topic: "" };
-
-        if(!val && !currentRecord.topic) {
-          delete state.data.assignments[date];
-          await saveAssignment(date, null);
-        } else {
-          currentRecord.host = val;
-          state.data.assignments[date] = currentRecord;
-          await saveAssignment(date, currentRecord);
-        }
+        if(val) state.data.assignments[date] = val;
+        else delete state.data.assignments[date];
+        await saveAssignment(date, val || null);
       });
       return;
     }
-
-    if(action === "update-topic"){
-      el.addEventListener("change", async (e)=>{
-        const date = el.getAttribute("data-date");
-        const val = e.target.value.trim();
-        
-        let currentRecord = state.data.assignments[date] || { host: "", topic: "" };
-        if (typeof currentRecord !== 'object') currentRecord = { host: currentRecord, topic: "" };
-
-        if(!val && !currentRecord.host) {
-          delete state.data.assignments[date];
-          await saveAssignment(date, null);
-        } else {
-          currentRecord.topic = val;
-          state.data.assignments[date] = currentRecord;
-          await saveAssignment(date, currentRecord);
-        }
-      });
-      return;
-    }
-
     el.addEventListener("click", async (e)=>{
       if(action === "go-view"){
         state.isAdmin = false;
@@ -833,7 +690,7 @@ function attachHandlers(){
           state.passError = "";
           render();
         } else {
-          state.passError = "Invalid administrative cryptographic signature keys.";
+          state.passError = "Incorrect password. Try again.";
           render();
           setTimeout(()=>{ const i=document.getElementById("pass-input"); if(i) i.focus(); },0);
         }
@@ -880,6 +737,7 @@ function attachHandlers(){
     });
   });
 
+  // enter key submits password
   const passInput = document.getElementById("pass-input");
   if(passInput){
     passInput.addEventListener("keydown", (e)=>{
@@ -896,19 +754,19 @@ function attachHandlers(){
 
 let lastFailedRetry = null;
 
-async function saveAssignment(dateKey, payloadOrNull){
+async function saveAssignment(dateKey, hostNameOrNull){
   state.saveState = "saving";
   render();
   try{
-    await assignmentRef(dateKey).set(payloadOrNull);
+    await set(assignmentRef(dateKey), hostNameOrNull);
     state.saveState = "saved";
     state.syncError = "";
     lastFailedRetry = null;
   } catch(err){
     state.saveState = "error";
     state.syncError = (err && err.message) ? err.message : String(err);
-    lastFailedRetry = () => saveAssignment(dateKey, payloadOrNull);
-    console.error("Firebase assignment write failure details:", err);
+    lastFailedRetry = () => saveAssignment(dateKey, hostNameOrNull);
+    console.error("Firebase assignment write failed:", err);
   }
   render();
 }
@@ -917,7 +775,9 @@ async function addHostRemote(name){
   state.saveState = "saving";
   render();
   try{
-    await hostsRef.transaction((current)=>{
+    // Transaction: reads the CURRENT server value at write time and merges,
+    // so two admins adding hosts at the same moment don't overwrite each other.
+    await runTransaction(hostsRef, (current)=>{
       const list = Array.isArray(current) ? current.slice() : [];
       if(!list.includes(name)) list.push(name);
       return list;
@@ -929,7 +789,7 @@ async function addHostRemote(name){
     state.saveState = "error";
     state.syncError = (err && err.message) ? err.message : String(err);
     lastFailedRetry = () => addHostRemote(name);
-    console.error("Firebase remote registration error:", err);
+    console.error("Firebase host add failed:", err);
   }
   render();
 }
@@ -938,7 +798,7 @@ async function removeHostRemote(name){
   state.saveState = "saving";
   render();
   try{
-    await hostsRef.transaction((current)=>{
+    await runTransaction(hostsRef, (current)=>{
       const list = Array.isArray(current) ? current.slice() : [];
       return list.filter(h => h !== name);
     });
@@ -949,12 +809,14 @@ async function removeHostRemote(name){
     state.saveState = "error";
     state.syncError = (err && err.message) ? err.message : String(err);
     lastFailedRetry = () => removeHostRemote(name);
-    console.error("Firebase destructive mutation error:", err);
+    console.error("Firebase host remove failed:", err);
   }
   render();
 }
 
-scheduleRef.on("value", (snapshot)=>{
+// Real-time listener: fires immediately on connect, and again the instant
+// any admin, on any device, writes a change. No polling needed.
+onValue(scheduleRef, (snapshot)=>{
   const val = snapshot.val();
   state.data = (val && typeof val === "object") ? {
     hosts: Array.isArray(val.hosts) ? val.hosts : [],
@@ -964,12 +826,12 @@ scheduleRef.on("value", (snapshot)=>{
   state.connectionState = "connected";
   state.syncError = "";
   if(state.saveState !== "saving") state.saveState = "idle";
-  render();
+  if(state.screen === "main") render();
 }, (error)=>{
   state.connectionState = "error";
   state.syncError = (error && error.message) ? error.message : String(error);
-  console.error("Realtime listener synchronization fault:", error);
-  render();
+  console.error("Firebase read failed:", error);
+  if(state.screen === "main") render();
 });
 
 render();
