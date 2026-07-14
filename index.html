@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Host Schedule</title>
+<title>Live Host Schedule - Nan Stream Team</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
@@ -485,7 +485,7 @@ function renderChooser(){
   <div class="screen">
     <div class="chooser-card">
       <span class="pulse-dot"></span>
-      <div class="chooser-title display">Live Host Schedule</div>
+      <div class="chooser-title display">Live Host Schedule - Nan Stream Team</div>
       <div class="chooser-sub">Weekly broadcast roster · Sunday&nbsp;&ndash;&nbsp;Friday cycle</div>
       <div class="choice-row">
         <button class="choice-btn view-btn" data-action="go-view">
@@ -629,7 +629,7 @@ function renderMain(){
       <div class="top-row">
         <div class="title-block">
           <div class="eyebrow">Broadcast Roster</div>
-          <h1 class="display">Live Host Schedule
+          <h1 class="display">Live Host Schedule - Nan Stream Team
             <span class="mode-tag ${state.isAdmin?'admin':'view'}">${state.isAdmin?'Admin':'View Only'}</span>
           </h1>
         </div>
@@ -775,8 +775,6 @@ async function addHostRemote(name){
   state.saveState = "saving";
   render();
   try{
-    // Transaction: reads the CURRENT server value at write time and merges,
-    // so two admins adding hosts at the same moment don't overwrite each other.
     await runTransaction(hostsRef, (current)=>{
       const list = Array.isArray(current) ? current.slice() : [];
       if(!list.includes(name)) list.push(name);
@@ -814,8 +812,6 @@ async function removeHostRemote(name){
   render();
 }
 
-// Real-time listener: fires immediately on connect, and again the instant
-// any admin, on any device, writes a change. No polling needed.
 onValue(scheduleRef, (snapshot)=>{
   const val = snapshot.val();
   state.data = (val && typeof val === "object") ? {
