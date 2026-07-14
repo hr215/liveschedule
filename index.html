@@ -1,836 +1,1426 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Host Schedule - Oliek Books</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
-
-  :root{
-    --bg-deep:#0A0C10;
-    --bg-panel:#13161C;
-    --bg-raised:#1B1F27;
-    --bg-raised-2:#20242E;
-    --text-primary:#F2F4F7;
-    --text-muted:#8B93A1;
-    --text-faint:#565D6B;
-    --accent-live:#FE2C55;
-    --accent-cyan:#25F4EE;
-    --border:#262B35;
-    --border-soft:#1D212A;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:radial-gradient(circle at 50% 0%, #14181F 0%, #0A0C10 55%);
-    color:var(--text-primary);
-    font-family:'Inter',sans-serif;
-    min-height:100vh;
-    -webkit-font-smoothing:antialiased;
-  }
-  .display{font-family:'Oswald',sans-serif; letter-spacing:0.02em;}
-  .eyebrow{
-    font-family:'Oswald',sans-serif;
-    font-size:11px;
-    letter-spacing:0.22em;
-    text-transform:uppercase;
-    color:var(--text-faint);
-  }
-  button{font-family:'Inter',sans-serif; cursor:pointer;}
-  input,select{font-family:'Inter',sans-serif;}
-
-  /* ---------- layout shells ---------- */
-  .screen{
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:24px;
-  }
-  .app-shell{
-    min-height:100vh;
-    padding:20px 20px 60px;
-  }
-  .wrap{max-width:820px; margin:0 auto;}
-
-  /* ---------- chooser screen ---------- */
-  .chooser-card{
-    max-width:460px;
-    width:100%;
-    text-align:center;
-  }
-  .pulse-dot{
-    width:9px;height:9px;border-radius:50%;
-    background:var(--accent-live);
-    display:inline-block;
-    box-shadow:0 0 0 0 rgba(254,44,85,0.55);
-    animation:pulse 1.8s infinite;
-  }
-  @keyframes pulse{
-    0%{box-shadow:0 0 0 0 rgba(254,44,85,0.55);}
-    70%{box-shadow:0 0 0 9px rgba(254,44,85,0);}
-    100%{box-shadow:0 0 0 0 rgba(254,44,85,0);}
-  }
-  .chooser-title{
-    font-size:38px;
-    font-weight:700;
-    margin:14px 0 6px;
-    text-transform:uppercase;
-  }
-  .chooser-sub{
-    color:var(--text-muted);
-    font-size:14px;
-    margin-bottom:36px;
-    line-height:1.5;
-  }
-  .choice-row{display:flex; flex-direction:column; gap:12px;}
-  .choice-btn{
-    border:1px solid var(--border);
-    background:var(--bg-panel);
-    color:var(--text-primary);
-    padding:20px 22px;
-    border-radius:10px;
-    text-align:left;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    transition:border-color .15s ease, background .15s ease;
-  }
-  .choice-btn:hover{border-color:#3A4150; background:var(--bg-raised);}
-  .choice-btn .label{
-    font-family:'Oswald',sans-serif;
-    font-size:16px;
-    text-transform:uppercase;
-    letter-spacing:0.05em;
-  }
-  .choice-btn .desc{color:var(--text-muted); font-size:12.5px; margin-top:4px;}
-  .choice-btn .arrow{color:var(--text-faint); font-size:20px;}
-  .choice-btn.admin-btn:hover{border-color:var(--accent-cyan);}
-  .choice-btn.view-btn:hover{border-color:var(--accent-live);}
-
-  /* ---------- password screen ---------- */
-  .pass-card{
-    max-width:360px;
-    width:100%;
-  }
-  .pass-card input{
-    width:100%;
-    background:var(--bg-panel);
-    border:1px solid var(--border);
-    color:var(--text-primary);
-    padding:13px 14px;
-    border-radius:8px;
-    font-size:15px;
-    margin:18px 0 10px;
-    outline:none;
-  }
-  .pass-card input:focus{border-color:var(--accent-cyan);}
-  .primary-btn{
-    width:100%;
-    background:var(--accent-cyan);
-    color:#04191A;
-    border:none;
-    padding:13px 14px;
-    border-radius:8px;
-    font-weight:700;
-    font-size:14px;
-    text-transform:uppercase;
-    letter-spacing:0.04em;
-  }
-  .primary-btn:hover{filter:brightness(1.08);}
-  .error-text{color:var(--accent-live); font-size:13px; min-height:18px; margin-top:2px;}
-  .link-back{
-    color:var(--text-faint);
-    font-size:13px;
-    background:none;
-    border:none;
-    margin-top:18px;
-    text-decoration:underline;
-  }
-
-  /* ---------- header ---------- */
-  .top-row{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    margin-bottom:26px;
-    gap:12px;
-    flex-wrap:wrap;
-  }
-  .title-block .eyebrow{margin-bottom:6px;}
-  .title-block h1{
-    font-size:26px;
-    margin:0;
-    text-transform:uppercase;
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  .mode-tag{
-    font-family:'Oswald',sans-serif;
-    font-size:11px;
-    letter-spacing:0.1em;
-    padding:4px 9px;
-    border-radius:5px;
-    text-transform:uppercase;
-  }
-  .mode-tag.view{background:rgba(254,44,85,0.12); color:var(--accent-live); border:1px solid rgba(254,44,85,0.35);}
-  .mode-tag.admin{background:rgba(37,244,238,0.1); color:var(--accent-cyan); border:1px solid rgba(37,244,238,0.35);}
-  .sync-status{
-    display:flex; align-items:center; gap:8px;
-    font-size:12px; color:var(--text-muted);
-    background:var(--bg-panel);
-    border:1px solid var(--border);
-    padding:8px 12px;
-    border-radius:8px;
-  }
-  .sync-dot{width:7px;height:7px;border-radius:50%; background:#3DDC84;}
-  .sync-dot.pending{background:#E8B84B; animation:pulse-amber 1.1s infinite;}
-  .sync-dot.bad{background:var(--accent-live);}
-  @keyframes pulse-amber{
-    0%{box-shadow:0 0 0 0 rgba(232,184,75,0.5);}
-    70%{box-shadow:0 0 0 7px rgba(232,184,75,0);}
-    100%{box-shadow:0 0 0 0 rgba(232,184,75,0);}
-  }
-  .sync-error-banner{
-    background:rgba(254,44,85,0.08);
-    border:1px solid rgba(254,44,85,0.35);
-    color:#FFB4C4;
-    border-radius:8px;
-    padding:10px 14px;
-    font-size:12.5px;
-    line-height:1.5;
-    margin-bottom:18px;
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:12px;
-  }
-  .sync-error-banner code{
-    background:rgba(0,0,0,0.25);
-    padding:1px 5px;
-    border-radius:4px;
-    font-size:11.5px;
-  }
-  .retry-btn{
-    flex-shrink:0;
-    background:none;
-    border:1px solid rgba(254,44,85,0.5);
-    color:#FFB4C4;
-    padding:5px 10px;
-    border-radius:6px;
-    font-size:11.5px;
-  }
-  .retry-btn:hover{background:rgba(254,44,85,0.15);}
-  .exit-btn{
-    background:none; border:1px solid var(--border); color:var(--text-muted);
-    padding:8px 12px; border-radius:8px; font-size:12.5px;
-  }
-  .exit-btn:hover{color:var(--text-primary); border-color:#3A4150;}
-  .header-right{display:flex; align-items:center; gap:10px;}
-
-  /* ---------- admin tab nav ---------- */
-  .tab-nav{
-    display:flex;
-    gap:6px;
-    margin-bottom:22px;
-    border-bottom:1px solid var(--border);
-    padding-bottom:0;
-  }
-  .tab-btn{
-    background:none;
-    border:none;
-    color:var(--text-muted);
-    font-family:'Oswald',sans-serif;
-    font-size:13px;
-    text-transform:uppercase;
-    letter-spacing:0.06em;
-    padding:10px 4px;
-    margin-right:22px;
-    border-bottom:2px solid transparent;
-    display:flex;
-    align-items:center;
-    gap:7px;
-  }
-  .tab-btn .tab-count{
-    background:var(--bg-raised);
-    color:var(--text-faint);
-    font-family:'Inter',sans-serif;
-    font-size:11px;
-    padding:1px 7px;
-    border-radius:10px;
-  }
-  .tab-btn:hover{color:var(--text-primary);}
-  .tab-btn.active{color:var(--accent-cyan); border-bottom-color:var(--accent-cyan);}
-  .tab-btn.active .tab-count{color:var(--accent-cyan); background:rgba(37,244,238,0.12);}
-
-  /* ---------- week nav ---------- */
-  .week-nav{
-    display:flex; align-items:center; justify-content:space-between;
-    background:var(--bg-panel);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:12px 14px;
-    margin-bottom:18px;
-  }
-  .nav-btn{
-    background:var(--bg-raised); border:1px solid var(--border); color:var(--text-primary);
-    width:32px;height:32px; border-radius:7px; font-size:15px;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .nav-btn:hover{border-color:var(--accent-cyan);}
-  .week-label{font-family:'Oswald',sans-serif; font-size:14px; letter-spacing:0.03em; text-align:center;}
-  .today-btn{
-    background:none; border:1px solid var(--border); color:var(--text-muted);
-    font-size:11.5px; padding:6px 10px; border-radius:6px; text-transform:uppercase; letter-spacing:0.05em;
-  }
-  .today-btn:hover{color:var(--accent-live); border-color:var(--accent-live);}
-
-  /* ---------- day cards ---------- */
-  .day-list{display:flex; flex-direction:column; gap:8px; margin-bottom:30px;}
-  .day-card{
-    background:var(--bg-panel);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:14px 16px;
-    display:flex;
-    align-items:center;
-    gap:16px;
-  }
-  .day-card.is-today{border-color:rgba(254,44,85,0.5); background:linear-gradient(90deg, rgba(254,44,85,0.07), transparent 60%);}
-  .day-date{width:96px; flex-shrink:0;}
-  .day-name{font-family:'Oswald',sans-serif; font-size:13px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-primary);}
-  .day-num{font-size:12px; color:var(--text-muted); margin-top:2px;}
-  .day-divider{width:1px; align-self:stretch; background:var(--border-soft);}
-  .host-cell{flex:1; display:flex; align-items:center; gap:10px;}
-  .host-name-view{
-    font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:0.02em;
-  }
-  .host-name-view.empty{color:var(--text-faint); font-style:italic; font-family:'Inter',sans-serif; font-size:13px;}
-  .host-select{
-    flex:1;
-    background:var(--bg-raised);
-    color:var(--text-primary);
-    border:1px solid var(--border);
-    padding:9px 10px;
-    border-radius:7px;
-    font-size:13.5px;
-    outline:none;
-    max-width:260px;
-  }
-  .host-select:focus{border-color:var(--accent-cyan);}
-  .on-air{
-    font-family:'Oswald',sans-serif;
-    font-size:10.5px;
-    letter-spacing:0.08em;
-    color:var(--accent-live);
-    background:rgba(254,44,85,0.12);
-    border:1px solid rgba(254,44,85,0.4);
-    padding:3px 8px;
-    border-radius:5px;
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    flex-shrink:0;
-  }
-  .on-air .pulse-dot{width:6px;height:6px;}
-
-  /* ---------- master list panel ---------- */
-  .panel{
-    background:var(--bg-panel);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:20px;
-  }
-  .panel h2{
-    font-family:'Oswald',sans-serif;
-    font-size:14px;
-    text-transform:uppercase;
-    letter-spacing:0.08em;
-    margin:0 0 14px;
-    color:var(--text-muted);
-  }
-  .host-chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;}
-  .host-chip{
-    display:flex; align-items:center; gap:8px;
-    background:var(--bg-raised);
-    border:1px solid var(--border);
-    padding:7px 8px 7px 12px;
-    border-radius:20px;
-    font-size:13px;
-  }
-  .host-chip button{
-    background:none; border:none; color:var(--text-faint);
-    width:18px;height:18px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-size:13px; line-height:1;
-  }
-  .host-chip button:hover{color:var(--accent-live); background:rgba(254,44,85,0.12);}
-  .add-host-row{display:flex; gap:8px;}
-  .add-host-row input{
-    flex:1;
-    background:var(--bg-raised);
-    border:1px solid var(--border);
-    color:var(--text-primary);
-    padding:10px 12px;
-    border-radius:7px;
-    font-size:13.5px;
-    outline:none;
-  }
-  .add-host-row input:focus{border-color:var(--accent-cyan);}
-  .add-btn{
-    background:var(--accent-cyan);
-    color:#04191A;
-    border:none;
-    padding:0 16px;
-    border-radius:7px;
-    font-weight:700;
-    font-size:13px;
-  }
-  .empty-hosts{color:var(--text-faint); font-size:13px; font-style:italic;}
-  .footnote{
-    color:var(--text-faint);
-    font-size:11.5px;
-    margin-top:22px;
-    text-align:center;
-    line-height:1.6;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Host Scheduler</title>
+    <!-- Tailwind CSS for modern layout & design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS Custom configuration for dark blue accents -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f4f8',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            800: '#1e3a8a',
+                            900: '#1e293b',
+                            accent: '#2563eb'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons for clean visuals -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Modern scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
 
-<div id="root"></div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getDatabase, ref, set, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDQ9hs030NaJy2NoznP1bCSNa-eIRs4Kkg",
-  authDomain: "liveschedule-f6036.firebaseapp.com",
-  databaseURL: "https://liveschedule-f6036-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "liveschedule-f6036",
-  storageBucket: "liveschedule-f6036.firebasestorage.app",
-  messagingSenderId: "424904123728",
-  appId: "1:424904123728:web:3d2213361a78b2147b3855"
-};
-
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getDatabase(firebaseApp);
-const scheduleRef = ref(db, "liveHostSchedule");
-const hostsRef = ref(db, "liveHostSchedule/hosts");
-function assignmentRef(dateKey){ return ref(db, "liveHostSchedule/assignments/" + dateKey); }
-
-const ADMIN_PASSWORD = "NAN2221#";
-const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"]; // cycle: Sun -> Fri
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-let state = {
-  screen: "select",     // select | admin-pass | main
-  isAdmin: false,
-  passError: "",
-  data: { hosts: [], assignments: {} },
-  weekStart: getSundayOf(new Date()),
-  synced: false,
-  newHostName: "",
-  adminPage: "schedule",   // schedule | masters (admin only)
-  dbReady: false,
-  connectionState: "connecting",  // connecting | connected | error
-  saveState: "idle",              // idle | saving | saved | error
-  syncError: "",
-};
-
-function syncStatusHTML(){
-  if(state.connectionState === "error"){
-    return `<span class="sync-dot bad"></span>Connection failed`;
-  }
-  if(state.connectionState === "connecting"){
-    return `<span class="sync-dot pending"></span>Connecting…`;
-  }
-  if(state.saveState === "saving"){
-    return `<span class="sync-dot pending"></span>Saving…`;
-  }
-  if(state.saveState === "error"){
-    return `<span class="sync-dot bad"></span>Save failed`;
-  }
-  return `<span class="sync-dot"></span>Synced`;
-}
-
-function pad(n){ return n < 10 ? "0"+n : ""+n; }
-function toKey(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
-function getSundayOf(date){
-  const d = new Date(date);
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - d.getDay());
-  return d;
-}
-function addDays(date, n){
-  const d = new Date(date);
-  d.setDate(d.getDate()+n);
-  return d;
-}
-function sameDate(a,b){ return toKey(a) === toKey(b); }
-
-function render(){
-  const root = document.getElementById("root");
-  if(state.screen === "select") root.innerHTML = renderChooser();
-  else if(state.screen === "admin-pass") root.innerHTML = renderPassword();
-  else root.innerHTML = renderMain();
-  attachHandlers();
-}
-
-function renderChooser(){
-  return `
-  <div class="screen">
-    <div class="chooser-card">
-      <span class="pulse-dot"></span>
-      <div class="chooser-title display">Live Host Schedule - Oliek Books</div>
-      <div class="chooser-sub">Weekly broadcast roster · Sunday&nbsp;&ndash;&nbsp;Friday cycle</div>
-      <div class="choice-row">
-        <button class="choice-btn view-btn" data-action="go-view">
-          <div>
-            <div class="label">Schedule View</div>
-            <div class="desc">Open access · view only, no login needed</div>
-          </div>
-          <div class="arrow">&rarr;</div>
-        </button>
-        <button class="choice-btn admin-btn" data-action="go-admin-pass">
-          <div>
-            <div class="label">Admin</div>
-            <div class="desc">Password required · edit hosts &amp; schedule</div>
-          </div>
-          <div class="arrow">&rarr;</div>
-        </button>
-      </div>
+    <!-- Firebase Connection Banner (Shown only when configuration is empty) -->
+    <div id="setup-banner" class="hidden bg-amber-500 text-white text-center py-2 px-4 text-sm font-medium z-50 sticky top-0 shadow-md">
+        <span class="inline-flex items-center gap-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            Please configure your Firebase credentials in the code to enable real-time synchronization.
+        </span>
     </div>
-  </div>`;
-}
 
-function renderPassword(){
-  return `
-  <div class="screen">
-    <div class="pass-card">
-      <div class="eyebrow">Admin Access</div>
-      <div class="chooser-title display" style="font-size:26px; text-align:left; margin-top:8px;">Enter Password</div>
-      <input type="password" id="pass-input" placeholder="Password" autocomplete="off" />
-      <div class="error-text">${state.passError}</div>
-      <button class="primary-btn" data-action="submit-pass">Unlock Admin</button>
-      <br/>
-      <button class="link-back" data-action="back-to-select">&larr; Back</button>
-    </div>
-  </div>`;
-}
+    <!-- MAIN APP CONTAINER -->
+    <main id="app-viewport" class="flex-grow flex flex-col">
+        
+        <!-- ==========================================
+             1. LANDING PAGE VIEW 
+             ========================================== -->
+        <div id="view-landing" class="flex-grow flex items-center justify-center px-4 py-12">
+            <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center space-y-8">
+                <div class="space-y-3">
+                    <div class="mx-auto w-16 h-16 bg-blue-50 text-brand-800 rounded-2xl flex items-center justify-center shadow-inner">
+                        <i data-lucide="calendar-range" class="w-8 h-8"></i>
+                    </div>
+                    <h1 class="text-3xl font-extrabold text-brand-900 tracking-tight">Live Host Scheduler</h1>
+                    <p class="text-sm text-slate-500">Access real-time schedules or manage your host rotations.</p>
+                </div>
 
-function renderMain(){
-  const days = [];
-  for(let i=0;i<6;i++) days.push(addDays(state.weekStart,i));
-  const today = new Date();
-  const weekEnd = days[5];
-  const weekLabel = `${MONTH_NAMES[days[0].getMonth()]} ${days[0].getDate()} — ${weekEnd.getMonth()!==days[0].getMonth() ? MONTH_NAMES[weekEnd.getMonth()]+' ' : ''}${weekEnd.getDate()}, ${weekEnd.getFullYear()}`;
+                <div class="flex flex-col gap-4">
+                    <button id="btn-to-schedule" class="w-full flex items-center justify-center gap-3 bg-brand-800 text-white font-semibold py-4 px-6 rounded-xl hover:bg-slate-800 active:transform active:scale-95 transition shadow-lg shadow-blue-900/10">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        Schedule View
+                    </button>
+                    
+                    <button id="btn-to-admin-gate" class="w-full flex items-center justify-center gap-3 bg-slate-100 text-brand-900 font-semibold py-4 px-6 rounded-xl hover:bg-slate-200 active:transform active:scale-95 transition border border-slate-200">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                        Admin Dashboard
+                    </button>
+                </div>
 
-  const hosts = state.data.hosts || [];
-  const assignments = state.data.assignments || {};
-
-  const dayCards = days.map((d,i)=>{
-    const key = toKey(d);
-    const isToday = sameDate(d, today);
-    const assigned = assignments[key] || "";
-    const onAirBadge = (isToday && assigned) ? `<span class="on-air"><span class="pulse-dot"></span>ON AIR</span>` : "";
-
-    let hostCell;
-    if(state.isAdmin){
-      const knownList = hosts.includes(assigned) || !assigned ? hosts : [assigned, ...hosts];
-      const options = ['<option value="">— No host assigned —</option>']
-        .concat(knownList.map(h => `<option value="${escapeAttr(h)}" ${h===assigned?'selected':''}>${escapeHtml(h)}</option>`))
-        .join("");
-      hostCell = `<select class="host-select" data-date="${key}" data-action="assign-host">${options}</select>`;
-    } else {
-      hostCell = assigned
-        ? `<span class="host-name-view">${escapeHtml(assigned)}</span>`
-        : `<span class="host-name-view empty">No host assigned</span>`;
-    }
-
-    return `
-    <div class="day-card ${isToday?'is-today':''}">
-      <div class="day-date">
-        <div class="day-name">${DAY_NAMES[i]}</div>
-        <div class="day-num">${MONTH_NAMES[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}</div>
-      </div>
-      <div class="day-divider"></div>
-      <div class="host-cell">${hostCell}${onAirBadge}</div>
-    </div>`;
-  }).join("");
-
-  const masterPanel = `
-    <div class="panel">
-      <h2>Master List of Live Hosts</h2>
-      <div class="host-chip-row">
-        ${hosts.length ? hosts.map(h => `
-          <div class="host-chip">
-            <span>${escapeHtml(h)}</span>
-            <button data-action="remove-host" data-host="${escapeAttr(h)}" title="Remove host">&times;</button>
-          </div>`).join("") : '<div class="empty-hosts">No hosts added yet — add your first host below.</div>'}
-      </div>
-      <div class="add-host-row">
-        <input id="new-host-input" type="text" placeholder="Host name" value="${escapeAttr(state.newHostName)}" />
-        <button class="add-btn" data-action="add-host">Add Host</button>
-      </div>
-    </div>`;
-
-  const schedulePage = `
-    <div class="week-nav">
-      <button class="nav-btn" data-action="prev-week">&larr;</button>
-      <div>
-        <div class="week-label">${weekLabel}</div>
-      </div>
-      <div style="display:flex; gap:8px;">
-        <button class="today-btn" data-action="this-week">This Week</button>
-        <button class="nav-btn" data-action="next-week">&rarr;</button>
-      </div>
-    </div>
-    <div class="day-list">${dayCards}</div>`;
-
-  const tabNav = state.isAdmin ? `
-    <div class="tab-nav">
-      <button class="tab-btn ${state.adminPage==='schedule'?'active':''}" data-action="tab-schedule">Schedule</button>
-      <button class="tab-btn ${state.adminPage==='masters'?'active':''}" data-action="tab-masters">Master List <span class="tab-count">${hosts.length}</span></button>
-    </div>` : "";
-
-  let pageContent;
-  if(!state.isAdmin){
-    pageContent = schedulePage;
-  } else if(state.adminPage === "masters"){
-    pageContent = masterPanel;
-  } else {
-    pageContent = schedulePage;
-  }
-
-  const footnoteText = state.isAdmin
-    ? (state.adminPage === "masters"
-        ? "Changes sync automatically across all devices and users."
-        : "Changes sync automatically across all devices and users. Editing one date only affects that date — other weeks stay as they are.")
-    : "Changes sync automatically across all devices and users.";
-
-  const hasError = state.connectionState === "error" || state.saveState === "error";
-  const errorBanner = hasError ? `
-    <div class="sync-error-banner">
-      <div>
-        <strong>${state.connectionState === "error" ? "Could not connect to the database." : "Your last change did not save."}</strong><br/>
-        ${state.syncError ? `<code>${escapeHtml(state.syncError)}</code>` : "Unknown error."}
-        ${/permission/i.test(state.syncError||"") ? '<br/>This usually means the Firebase Database Rules are blocking read/write access.' : ''}
-      </div>
-      <button class="retry-btn" data-action="retry-sync">Retry</button>
-    </div>` : "";
-
-  return `
-  <div class="app-shell">
-    <div class="wrap">
-      <div class="top-row">
-        <div class="title-block">
-          <div class="eyebrow">Broadcast Roster</div>
-          <h1 class="display">Live Host Schedule - Oliek Books
-            <span class="mode-tag ${state.isAdmin?'admin':'view'}">${state.isAdmin?'Admin':'View Only'}</span>
-          </h1>
+                <div class="pt-4 border-t border-slate-100">
+                    <p class="text-xs text-slate-400">Powered by Real-Time Cloud Synchronization</p>
+                </div>
+            </div>
         </div>
-        <div class="header-right">
-          <div class="sync-status">${syncStatusHTML()}</div>
-          <button class="exit-btn" data-action="exit-to-select">Exit</button>
+
+        <!-- ==========================================
+             2. PUBLIC SCHEDULE VIEW
+             ========================================== -->
+        <div id="view-schedule" class="hidden flex-col flex-grow">
+            <!-- Nav Header -->
+            <header class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-30 shadow-sm">
+                <div class="max-w-[1600px] mx-auto flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center">
+                            <i data-lucide="calendar-days" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-brand-900 leading-tight">Live Schedules</h2>
+                            <span class="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                                Live Syncing
+                            </span>
+                        </div>
+                    </div>
+                    <button class="btn-back-home flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-900 transition font-medium bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-lg">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        Exit
+                    </button>
+                </div>
+            </header>
+
+            <!-- Calendar Container -->
+            <div class="max-w-[1600px] mx-auto w-full px-4 md:px-8 py-8 flex-grow space-y-6">
+                <!-- Month Navigator -->
+                <div class="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <button id="prev-month-pub" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition">
+                        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                    </button>
+                    <h3 id="current-month-label-pub" class="text-lg md:text-xl font-bold text-brand-900 tracking-tight">July 2026</h3>
+                    <button id="next-month-pub" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition">
+                        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <!-- Calendar Grid Legend (Desktop Widescreen View only) -->
+                <div class="hidden lg:grid grid-cols-7 gap-2 xl:gap-4 text-center text-xs font-bold text-slate-500 tracking-wider uppercase px-2">
+                    <div>Sunday</div>
+                    <div>Monday</div>
+                    <div>Tuesday</div>
+                    <div>Wednesday</div>
+                    <div>Thursday</div>
+                    <div>Friday</div>
+                    <div class="text-amber-600 bg-amber-50 rounded py-1">Saturday (No Live)</div>
+                </div>
+
+                <!-- Main Grid Calendar View with Safe Responsive Columns -->
+                <div id="calendar-grid-pub" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 xl:gap-4">
+                    <!-- Cards injection dynamically -->
+                </div>
+            </div>
         </div>
-      </div>
 
-      ${errorBanner}
+        <!-- ==========================================
+             3. ADMIN LOGIN VIEW 
+             ========================================== -->
+        <div id="view-admin-gate" class="hidden flex-grow flex items-center justify-center px-4 py-12">
+            <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="mx-auto w-12 h-12 bg-red-50 text-brand-accent rounded-full flex items-center justify-center">
+                        <i data-lucide="lock" class="w-6 h-6 text-brand-800"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-brand-900">Admin Authorization</h2>
+                    <p class="text-sm text-slate-500">Please provide administrative password to modify schedules.</p>
+                </div>
 
-      ${tabNav}
+                <form id="admin-login-form" class="space-y-4">
+                    <div>
+                        <label for="admin-password" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Password</label>
+                        <div class="relative">
+                            <input type="password" id="admin-password" placeholder="••••••••" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none transition text-brand-900 pr-10">
+                            <button type="button" id="toggle-pw-visibility" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                                <i data-lucide="eye" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <p id="login-error-msg" class="hidden mt-2 text-sm text-red-600 font-medium flex items-center gap-1">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            Incorrect password.
+                        </p>
+                    </div>
 
-      ${pageContent}
+                    <div class="flex gap-3">
+                        <button type="button" class="btn-back-home w-1/3 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl transition text-center text-sm border border-slate-200">
+                            Cancel
+                        </button>
+                        <button type="submit" class="w-2/3 py-3.5 bg-brand-800 hover:bg-slate-800 text-white font-semibold rounded-xl transition text-sm shadow-md shadow-slate-900/15">
+                            Verify Identity
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-      <div class="footnote">${footnoteText}</div>
+        <!-- ==========================================
+             4. ADMIN DASHBOARD VIEW (With Non-Sliding Header Tabs)
+             ========================================== -->
+        <div id="view-admin-dashboard" class="hidden flex-col flex-grow bg-slate-50">
+            <!-- Top Navigation Bar (Eliminates Sliding Drawers completely) -->
+            <header class="bg-brand-900 text-white px-6 py-4 shadow-md sticky top-0 z-30">
+                <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
+                    <!-- Brand & Panel Title -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-600/20 text-blue-400 rounded-xl flex items-center justify-center border border-blue-500/30 shrink-0">
+                            <i data-lucide="sliders" class="w-5 h-5"></i>
+                        </div>
+                        <div class="text-center lg:text-left">
+                            <h2 class="font-extrabold text-lg leading-tight tracking-tight">Admin Console</h2>
+                        </div>
+                    </div>
+
+                    <!-- Non-Sliding Navigation Selectors -->
+                    <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700 w-full lg:w-auto overflow-x-auto">
+                        <button id="tab-btn-schedule" class="admin-tab-btn flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold transition shrink-0">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            Schedule Editor
+                        </button>
+                        <button id="tab-btn-hosts" class="admin-tab-btn flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold transition shrink-0">
+                            <i data-lucide="users" class="w-4 h-4"></i>
+                            Master List
+                        </button>
+                        <button id="tab-btn-data" class="admin-tab-btn flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold transition shrink-0">
+                            <i data-lucide="database" class="w-4 h-4"></i>
+                            Live Host Data
+                        </button>
+                    </div>
+
+                    <!-- Header Logout Button -->
+                    <button class="btn-logout flex items-center gap-2 text-xs md:text-sm font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-4 py-2.5 rounded-xl transition border border-slate-700 shrink-0">
+                        <i data-lucide="log-out" class="w-4 h-4 text-red-400"></i>
+                        Logout
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Dynamic Panel Content Area -->
+            <main class="max-w-[1600px] mx-auto w-full px-4 md:px-8 py-8 flex-grow">
+                
+                <!-- Tab CONTENT 1: Schedule -->
+                <div id="panel-schedule" class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+                        <div>
+                            <h2 class="text-2xl font-black text-brand-900 tracking-tight">Schedule Editor</h2>
+                            <p class="text-sm text-slate-500 mt-1">Select a calendar date to quickly assign hosts and live streaming runtimes.</p>
+                        </div>
+                        <!-- Month Switcher -->
+                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 border border-slate-200 rounded-lg shadow-sm w-fit self-start md:self-auto">
+                            <button id="prev-month-admin" class="p-1.5 hover:bg-slate-100 rounded-md transition text-slate-600">
+                                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                            </button>
+                            <span id="current-month-label-admin" class="text-sm font-bold text-brand-900 w-28 text-center">July 2026</span>
+                            <button id="next-month-admin" class="p-1.5 hover:bg-slate-100 rounded-md transition text-slate-600">
+                                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Main Grid Calendar View for Admin -->
+                    <div class="hidden lg:grid grid-cols-7 gap-2 xl:gap-4 text-center text-xs font-bold text-slate-500 tracking-wider uppercase px-2">
+                        <div>Sunday</div>
+                        <div>Monday</div>
+                        <div>Tuesday</div>
+                        <div>Wednesday</div>
+                        <div>Thursday</div>
+                        <div>Friday</div>
+                        <div class="text-amber-600">Saturday (No Live)</div>
+                    </div>
+                    
+                    <div id="calendar-grid-admin" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 xl:gap-4">
+                        <!-- Dynamic calendar logic -->
+                    </div>
+                </div>
+
+                <!-- Tab CONTENT 2: Master List (Host Roster) -->
+                <div id="panel-hosts" class="hidden space-y-6">
+                    <div class="border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-black text-brand-900 tracking-tight">Host Master List</h2>
+                            <p class="text-sm text-slate-500 mt-1">Manage all available hosts. Scheduled calendars will instantaneously adapt to roster changes.</p>
+                        </div>
+                        
+                        <!-- Add Host Mini-Form -->
+                        <form id="add-host-form" class="flex flex-col sm:flex-row gap-2 max-w-md w-full">
+                            <input type="text" id="host-input-name" placeholder="Enter Host Display Name..." class="flex-grow px-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-800 text-sm font-medium" required>
+                            <button type="submit" class="bg-brand-800 text-white font-semibold px-5 py-2 rounded-lg hover:bg-slate-800 transition text-sm flex items-center justify-center gap-2 shrink-0">
+                                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                                Add Host
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Error & Notification Messages -->
+                    <div id="master-list-alert" class="hidden p-3 bg-red-100 border border-red-200 text-red-800 text-sm rounded-lg flex items-center gap-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                        <span id="master-list-alert-text"></span>
+                    </div>
+
+                    <!-- Host Cards / Roster Grid -->
+                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Registered Hosts</span>
+                            <span id="host-counter" class="text-xs bg-brand-100 text-brand-800 px-2.5 py-0.5 rounded-full font-bold">0 Hosts</span>
+                        </div>
+                        <ul id="host-roster-list" class="divide-y divide-slate-100">
+                            <!-- Injected by script -->
+                            <li class="p-6 text-center text-slate-400 text-sm">No hosts registered in master roster. Register a new host above!</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Tab CONTENT 3: Live Host Data (Rich Database & Hours Calculator) -->
+                <div id="panel-data" class="hidden space-y-6">
+                    <div class="border-b border-slate-200 pb-5 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+                        <div>
+                            <h2 class="text-2xl font-black text-brand-900 tracking-tight">Live Host Database & Payroll</h2>
+                            <p class="text-sm text-slate-500 mt-1">Configure profile records, bank specifications, and compute worked durations dynamically.</p>
+                        </div>
+                        
+                        <!-- Dynamic Hours & Payout Statement Filter -->
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-end gap-3 self-start lg:self-auto">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider">From Date</label>
+                                <input type="date" id="calculator-from-date" class="border border-slate-200 rounded px-2 py-1 text-sm font-semibold focus:ring-1 focus:ring-brand-800 focus:outline-none">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider">To Date</label>
+                                <input type="date" id="calculator-to-date" class="border border-slate-200 rounded px-2 py-1 text-sm font-semibold focus:ring-1 focus:ring-brand-800 focus:outline-none">
+                            </div>
+                            <button type="button" id="btn-trigger-calculation" class="bg-brand-800 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-slate-800 transition shadow flex items-center gap-1.5">
+                                <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                                Calculate Hours
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Host Interactive Ledger List -->
+                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        <th class="p-4">Display Name</th>
+                                        <th class="p-4">Host ID</th>
+                                        <th class="p-4">Full Name</th>
+                                        <th class="p-4">Bank Name & Account No</th>
+                                        <th class="p-4">Rate per Hour (RM)</th>
+                                        <th class="p-4 text-center bg-blue-50/50">Hours Worked</th>
+                                        <th class="p-4 text-right bg-blue-100/30">Calculated Payout</th>
+                                        <th class="p-4 text-center">Profile Admin</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="data-table-body" class="divide-y divide-slate-100 text-sm font-medium">
+                                    <!-- Dynamic rows loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </main>
+
+    <!-- ==========================================
+         5. MODAL: EDIT DATE SPECIFIC SCHEDULE 
+         ========================================== -->
+    <div id="modal-schedule" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center px-4 py-12 z-50 backdrop-blur-sm">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform scale-95 transition-all duration-200">
+            <!-- Modal Header -->
+            <div class="p-6 bg-brand-900 text-white flex justify-between items-center">
+                <div>
+                    <h3 id="modal-date-label" class="text-lg font-bold">13 Jul (Sunday)</h3>
+                    <p class="text-xs text-slate-300">Daily Live Schedule Configuration</p>
+                </div>
+                <button type="button" class="btn-close-modal text-slate-300 hover:text-white transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form Content -->
+            <form id="modal-schedule-form" class="p-6 space-y-5">
+                <input type="hidden" id="modal-target-date">
+                
+                <!-- Host Assignment Selection -->
+                <div class="space-y-2">
+                    <label for="modal-host-select" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Assigned Live Host</label>
+                    <select id="modal-host-select" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none transition font-medium text-brand-900">
+                        <option value="">Unassigned (Open Slot)</option>
+                        <!-- Dynamic options here -->
+                    </select>
+                </div>
+
+                <!-- Custom Grid for Start and End Times -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label for="modal-start-time" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Start Time</label>
+                        <input type="time" id="modal-start-time" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none transition font-medium text-brand-900">
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label for="modal-end-time" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">End Time</label>
+                        <input type="time" id="modal-end-time" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none transition font-medium text-brand-900">
+                    </div>
+                </div>
+
+                <!-- Actions Buttons -->
+                <div class="flex gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" class="btn-close-modal flex-1 py-3 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold transition text-sm text-center">
+                        Close
+                    </button>
+                    <button type="submit" class="flex-1 py-3 text-white bg-brand-800 hover:bg-slate-800 rounded-xl font-bold transition text-sm text-center shadow-lg shadow-slate-900/10">
+                        Apply Changes
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-  </div>`;
-}
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-function escapeAttr(s){ return escapeHtml(s); }
+    <!-- ==========================================
+         6. MODAL: EDIT HOST PROFILE DATA
+         ========================================== -->
+    <div id="modal-profile-edit" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center px-4 py-12 z-50 backdrop-blur-sm">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform scale-95 transition-all duration-200">
+            <!-- Modal Header -->
+            <div class="p-6 bg-brand-900 text-white flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-bold">Edit Host Profile</h3>
+                    <p class="text-xs text-slate-300">Set bank details, ID, and wage particulars</p>
+                </div>
+                <button type="button" id="btn-close-profile-modal" class="text-slate-300 hover:text-white transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
 
-function attachHandlers(){
-  document.querySelectorAll("[data-action]").forEach(el=>{
-    const action = el.getAttribute("data-action");
-    if(action === "assign-host"){
-      el.addEventListener("change", async (e)=>{
-        const date = el.getAttribute("data-date");
-        const val = e.target.value;
-        if(val) state.data.assignments[date] = val;
-        else delete state.data.assignments[date];
-        await saveAssignment(date, val || null);
-      });
-      return;
-    }
-    el.addEventListener("click", async (e)=>{
-      if(action === "go-view"){
-        state.isAdmin = false;
-        state.screen = "main";
-        render();
-      } else if(action === "go-admin-pass"){
-        state.screen = "admin-pass";
-        state.passError = "";
-        render();
-        setTimeout(()=>{ const i=document.getElementById("pass-input"); if(i) i.focus(); },0);
-      } else if(action === "back-to-select"){
-        state.screen = "select";
-        render();
-      } else if(action === "submit-pass"){
-        const val = document.getElementById("pass-input").value;
-        if(val === ADMIN_PASSWORD){
-          state.isAdmin = true;
-          state.screen = "main";
-          state.adminPage = "schedule";
-          state.passError = "";
-          render();
-        } else {
-          state.passError = "Incorrect password. Try again.";
-          render();
-          setTimeout(()=>{ const i=document.getElementById("pass-input"); if(i) i.focus(); },0);
+            <!-- Profile Data Form -->
+            <form id="modal-profile-form" class="p-6 space-y-4">
+                <input type="hidden" id="profile-target-id">
+                
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Host Short Name</label>
+                    <input type="text" id="profile-short-name" disabled class="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-bold cursor-not-allowed text-sm">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="profile-host-id" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Host ID (Must be unique)</label>
+                    <input type="text" id="profile-host-id" placeholder="e.g. sarah-01" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none text-sm font-semibold">
+                    <p id="profile-id-error" class="hidden text-xs text-red-600 font-medium mt-1">Host ID already exists!</p>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="profile-full-name" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Full Legal Name</label>
+                    <input type="text" id="profile-full-name" placeholder="Johnathan Doe" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none text-sm font-semibold">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label for="profile-bank-name" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Bank Name</label>
+                        <input type="text" id="profile-bank-name" placeholder="e.g. Maybank, CIMB" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none text-sm font-semibold">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="profile-bank-account-no" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Account Number</label>
+                        <input type="text" id="profile-bank-account-no" placeholder="e.g. 164012345678" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none text-sm font-semibold">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="profile-rate" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Wage Rate per Hour (RM)</label>
+                    <input type="number" step="0.01" id="profile-rate" placeholder="25.00" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:outline-none text-sm font-semibold">
+                </div>
+
+                <div class="flex gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" id="btn-cancel-profile-edit" class="flex-1 py-3 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold transition text-sm text-center">
+                        Discard
+                    </button>
+                    <button type="submit" class="flex-1 py-3 text-white bg-brand-800 hover:bg-slate-800 rounded-xl font-bold transition text-sm text-center shadow-lg shadow-slate-900/10">
+                        Save Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         7. CONFIRMATION DELETION DIALOGUE
+         ========================================== -->
+    <div id="modal-confirm" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="max-w-sm w-full bg-white rounded-2xl shadow-xl p-6 space-y-4">
+            <div class="text-center">
+                <div class="mx-auto w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-3">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h4 class="text-lg font-extrabold text-brand-900">Delete Host?</h4>
+                <p class="text-sm text-slate-500 mt-1">Are you sure you want to remove <span id="confirm-host-name" class="font-bold text-brand-900"></span>? Any schedules mapped to this host will retain their records, but will label them as unassigned in the future.</p>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button id="confirm-btn-cancel" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold transition">
+                    No, Cancel
+                </button>
+                <button id="confirm-btn-delete" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition shadow-md shadow-red-900/15">
+                    Yes, Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         8. FOOTER 
+         ========================================== -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400 mt-auto shrink-0">
+        <div class="max-w-[1600px] mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p>&copy; 2026 Live Host Scheduling System. Developed for continuous, serverless live-sync environments.</p>
+            <div class="flex gap-4">
+                <a href="#how-to-setup" class="hover:text-brand-800 transition font-medium">Setup Guide</a>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- ==================================================================================
+         FIREBASE & SYSTEM JAVASCRIPT LOGIC
+         ================================================================================== -->
+    <script type="module">
+        // Import necessary Firebase SDK libraries
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --------------------------------------------------------------------------------
+        // 1. FIREBASE CONFIGURATION PLACEHOLDER
+        // --------------------------------------------------------------------------------
+        // Replace with your Firebase credentials when uploading to GitHub Pages.
+        // It falls back gracefully to standard defaults in developer preview runtime environments.
+        const firebaseConfig = typeof __firebase_config !== 'undefined'
+            ? JSON.parse(__firebase_config)
+            : {
+                apiKey: "AIzaSyDQ9hs030NaJy2NoznP1bCSNa-eIRs4Kkg",
+                authDomain: "liveschedule-f6036.firebaseapp.com",
+                databaseURL: "https://liveschedule-f6036-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "liveschedule-f6036",
+                storageBucket: "liveschedule-f6036.firebasestorage.app",
+                messagingSenderId: "424904123728",
+                appId: "1:424904123728:web:3d2213361a78b2147b3855"
+            };
+
+        const hasValidConfig = firebaseConfig.apiKey && firebaseConfig.apiKey !== "";
+        if (!hasValidConfig) {
+            document.getElementById('setup-banner').classList.remove('hidden');
         }
-      } else if(action === "exit-to-select"){
-        state.isAdmin = false;
-        state.screen = "select";
-        render();
-      } else if(action === "prev-week"){
-        state.weekStart = addDays(state.weekStart, -7);
-        render();
-      } else if(action === "next-week"){
-        state.weekStart = addDays(state.weekStart, 7);
-        render();
-      } else if(action === "this-week"){
-        state.weekStart = getSundayOf(new Date());
-        render();
-      } else if(action === "tab-schedule"){
-        state.adminPage = "schedule";
-        render();
-      } else if(action === "tab-masters"){
-        state.adminPage = "masters";
-        render();
-      } else if(action === "add-host"){
-        const input = document.getElementById("new-host-input");
-        const name = (input.value || "").trim();
-        if(!name) return;
-        if(state.data.hosts.includes(name)){
-          input.value = "";
-          return;
-        }
-        input.value = "";
-        await addHostRemote(name);
-      } else if(action === "remove-host"){
-        const host = el.getAttribute("data-host");
-        await removeHostRemote(host);
-      } else if(action === "retry-sync"){
-        if(lastFailedRetry){
-          await lastFailedRetry();
-        } else {
-          state.connectionState = "connecting";
-          render();
-        }
-      }
-    });
-  });
 
-  // enter key submits password
-  const passInput = document.getElementById("pass-input");
-  if(passInput){
-    passInput.addEventListener("keydown", (e)=>{
-      if(e.key === "Enter") document.querySelector('[data-action="submit-pass"]').click();
-    });
-  }
-  const newHostInput = document.getElementById("new-host-input");
-  if(newHostInput){
-    newHostInput.addEventListener("keydown", (e)=>{
-      if(e.key === "Enter") document.querySelector('[data-action="add-host"]').click();
-    });
-  }
-}
+        // Initialize App & Firestore Services
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Follow strictly RULE 1: Establish deterministic IDs and collections paths
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'live-host-scheduler';
+        
+        // Store in global scope so components can read paths reliably
+        const pathHosts = collection(db, 'artifacts', appId, 'public', 'data', 'hosts');
+        const pathSchedules = collection(db, 'artifacts', appId, 'public', 'data', 'schedules');
 
-let lastFailedRetry = null;
+        // State Machine Variables
+        let currentUserId = null;
+        let activeView = 'landing';
+        let adminTab = 'schedule'; // 'schedule', 'hosts', 'data'
+        
+        // System Current Calendar Date Configuration (July 2026 default)
+        let currentCalendarDate = new Date(2026, 6, 14); // 14 July 2026
+        
+        // Firestore Local Sync Caches
+        let syncedHosts = [];      // Array of { id, name, fullName, bankAccount, hourlyRate }
+        let syncedSchedules = {};  // Object keyed by "YYYY-MM-DD" e.g., { "2026-07-14": { hostId, startTime, endTime } }
 
-async function saveAssignment(dateKey, hostNameOrNull){
-  state.saveState = "saving";
-  render();
-  try{
-    await set(assignmentRef(dateKey), hostNameOrNull);
-    state.saveState = "saved";
-    state.syncError = "";
-    lastFailedRetry = null;
-  } catch(err){
-    state.saveState = "error";
-    state.syncError = (err && err.message) ? err.message : String(err);
-    lastFailedRetry = () => saveAssignment(dateKey, hostNameOrNull);
-    console.error("Firebase assignment write failed:", err);
-  }
-  render();
-}
+        // Host targeted for deletion temporary state
+        let targetHostDeletionId = null;
 
-async function addHostRemote(name){
-  state.saveState = "saving";
-  render();
-  try{
-    await runTransaction(hostsRef, (current)=>{
-      const list = Array.isArray(current) ? current.slice() : [];
-      if(!list.includes(name)) list.push(name);
-      return list;
-    });
-    state.saveState = "saved";
-    state.syncError = "";
-    lastFailedRetry = null;
-  } catch(err){
-    state.saveState = "error";
-    state.syncError = (err && err.message) ? err.message : String(err);
-    lastFailedRetry = () => addHostRemote(name);
-    console.error("Firebase host add failed:", err);
-  }
-  render();
-}
+        // Interactive Date Ranges for Hours Worked Calculator (Defaulting to current calendar month)
+        let calculatorStartKey = "2026-07-01";
+        let calculatorEndKey = "2026-07-31";
 
-async function removeHostRemote(name){
-  state.saveState = "saving";
-  render();
-  try{
-    await runTransaction(hostsRef, (current)=>{
-      const list = Array.isArray(current) ? current.slice() : [];
-      return list.filter(h => h !== name);
-    });
-    state.saveState = "saved";
-    state.syncError = "";
-    lastFailedRetry = null;
-  } catch(err){
-    state.saveState = "error";
-    state.syncError = (err && err.message) ? err.message : String(err);
-    lastFailedRetry = () => removeHostRemote(name);
-    console.error("Firebase host remove failed:", err);
-  }
-  render();
-}
+        const executeFirebaseAuthentication = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase Authentication failure:", error);
+            }
+        };
 
-onValue(scheduleRef, (snapshot)=>{
-  const val = snapshot.val();
-  state.data = (val && typeof val === "object") ? {
-    hosts: Array.isArray(val.hosts) ? val.hosts : [],
-    assignments: (val.assignments && typeof val.assignments === "object") ? val.assignments : {},
-  } : { hosts: [], assignments: {} };
-  state.dbReady = true;
-  state.connectionState = "connected";
-  state.syncError = "";
-  if(state.saveState !== "saving") state.saveState = "idle";
-  if(state.screen === "main") render();
-}, (error)=>{
-  state.connectionState = "error";
-  state.syncError = (error && error.message) ? error.message : String(error);
-  console.error("Firebase read failed:", error);
-  if(state.screen === "main") render();
-});
+        window.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            
+            // Set default calculator values
+            document.getElementById('calculator-from-date').value = calculatorStartKey;
+            document.getElementById('calculator-to-date').value = calculatorEndKey;
 
-render();
-</script>
+            // Trigger Authentication flow first before subscriptions
+            await executeFirebaseAuthentication();
+            
+            // Watch Authentication status
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    initRealtimeSyncSubscriptions();
+                } else {
+                    currentUserId = null;
+                }
+            });
+
+            // Bind Native Interactions & View Routes
+            bindUiEvents();
+            renderViews();
+        });
+
+        const initRealtimeSyncSubscriptions = () => {
+            if (!auth.currentUser) return;
+
+            // Subscribe to Hosts roster collection
+            onSnapshot(pathHosts, (snapshot) => {
+                syncedHosts = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    syncedHosts.push({
+                        id: doc.id,
+                        name: data.name,
+                        fullName: data.fullName || data.name || '',
+                        bankName: data.bankName || '',
+                        bankAccountNo: data.bankAccountNo || data.bankAccount || '',
+                        hourlyRate: parseFloat(data.hourlyRate) || 0.00
+                    });
+                });
+                
+                // Sort hosts alphabetically
+                syncedHosts.sort((a, b) => a.name.localeCompare(b.name));
+
+                // Re-render components
+                updateHostDropdownOptions();
+                renderHostRosterUI();
+                renderHostDataUI();
+                renderCalendarSchedules();
+            }, (error) => {
+                console.error("Firestore hosts subscription failure:", error);
+            });
+
+            // Subscribe to Schedule rosters collection
+            onSnapshot(pathSchedules, (snapshot) => {
+                syncedSchedules = {};
+                snapshot.forEach((doc) => {
+                    syncedSchedules[doc.id] = doc.data(); // Key is YYYY-MM-DD
+                });
+                renderCalendarSchedules();
+                renderHostDataUI();
+            }, (error) => {
+                console.error("Firestore schedules subscription failure:", error);
+            });
+        };
+
+        const bindUiEvents = () => {
+            // Navigation Router Button bindings
+            document.getElementById('btn-to-schedule').addEventListener('click', () => {
+                activeView = 'schedule';
+                renderViews();
+            });
+
+            document.getElementById('btn-to-admin-gate').addEventListener('click', () => {
+                activeView = 'admin-gate';
+                renderViews();
+            });
+
+            document.querySelectorAll('.btn-back-home').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeView = 'landing';
+                    renderViews();
+                });
+            });
+
+            // Admin password access gate execution
+            const adminLoginForm = document.getElementById('admin-login-form');
+            adminLoginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const passwordInput = document.getElementById('admin-password');
+                const errorMsg = document.getElementById('login-error-msg');
+                
+                if (passwordInput.value === 'NAN2221#') {
+                    errorMsg.classList.add('hidden');
+                    passwordInput.value = '';
+                    activeView = 'admin-dashboard';
+                    adminTab = 'schedule';
+                    renderViews();
+                } else {
+                    errorMsg.classList.remove('hidden');
+                }
+            });
+
+            // Toggle Password Visibility
+            document.getElementById('toggle-pw-visibility').addEventListener('click', function() {
+                const passwordInput = document.getElementById('admin-password');
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                const icon = this.querySelector('i');
+                if (type === 'text') {
+                    this.innerHTML = '<i data-lucide="eye-off" class="w-5 h-5"></i>';
+                } else {
+                    this.innerHTML = '<i data-lucide="eye" class="w-5 h-5"></i>';
+                }
+                lucide.createIcons();
+            });
+
+            // Admin non-sliding header navigation tab triggers
+            document.getElementById('tab-btn-schedule').addEventListener('click', () => {
+                adminTab = 'schedule';
+                renderAdminTabUI();
+            });
+
+            document.getElementById('tab-btn-hosts').addEventListener('click', () => {
+                adminTab = 'hosts';
+                renderAdminTabUI();
+            });
+
+            document.getElementById('tab-btn-data').addEventListener('click', () => {
+                adminTab = 'data';
+                renderAdminTabUI();
+            });
+
+            document.querySelectorAll('.btn-logout').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeView = 'landing';
+                    renderViews();
+                });
+            });
+
+            // Master List: Create Host Operation (Automatically populates default data parameters)
+            document.getElementById('add-host-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const hostInput = document.getElementById('host-input-name');
+                const newHostName = hostInput.value.trim();
+                const alertContainer = document.getElementById('master-list-alert');
+                const alertText = document.getElementById('master-list-alert-text');
+
+                if (!newHostName) return;
+
+                const exists = syncedHosts.some(host => host.name.toLowerCase() === newHostName.toLowerCase());
+                if (exists) {
+                    alertText.innerText = `Host "${newHostName}" already exists on the roster list!`;
+                    alertContainer.classList.remove('hidden');
+                    return;
+                }
+
+                alertContainer.classList.add('hidden');
+
+                try {
+                    const targetDocId = crypto.randomUUID();
+                    const newHostRef = doc(db, 'artifacts', appId, 'public', 'data', 'hosts', targetDocId);
+                    await setDoc(newHostRef, { 
+                        name: newHostName,
+                        fullName: newHostName,
+                        bankAccount: "",
+                        hourlyRate: 15.00 // standard default hourly rate
+                    });
+                    hostInput.value = '';
+                } catch (err) {
+                    console.error("Error committing host addition:", err);
+                }
+            });
+
+            // Month Swapper Events
+            document.getElementById('prev-month-pub').addEventListener('click', () => adjustCurrentMonth(-1));
+            document.getElementById('next-month-pub').addEventListener('click', () => adjustCurrentMonth(1));
+            document.getElementById('prev-month-admin').addEventListener('click', () => adjustCurrentMonth(-1));
+            document.getElementById('next-month-admin').addEventListener('click', () => adjustCurrentMonth(1));
+
+            // Modal: Close Schedule Modal actions
+            document.querySelectorAll('.btn-close-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('modal-schedule').classList.add('hidden');
+                });
+            });
+
+            // Modal: Commit changes to database for selected date
+            document.getElementById('modal-schedule-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const dateKey = document.getElementById('modal-target-date').value;
+                const assignedHostId = document.getElementById('modal-host-select').value;
+                const startTime = document.getElementById('modal-start-time').value;
+                const endTime = document.getElementById('modal-end-time').value;
+
+                if (!dateKey) return;
+
+                const hostObj = syncedHosts.find(h => h.id === assignedHostId);
+                const assignedHostName = hostObj ? hostObj.name : "";
+
+                try {
+                    const targetScheduleRef = doc(db, 'artifacts', appId, 'public', 'data', 'schedules', dateKey);
+                    await setDoc(targetScheduleRef, {
+                        hostId: assignedHostId,
+                        hostName: assignedHostName,
+                        startTime: startTime,
+                        endTime: endTime
+                    });
+
+                    document.getElementById('modal-schedule').classList.add('hidden');
+                } catch (err) {
+                    console.error("Failed saving target live schedule:", err);
+                }
+            });
+
+            // Trigger calculated statement filter
+            document.getElementById('btn-trigger-calculation').addEventListener('click', () => {
+                calculatorStartKey = document.getElementById('calculator-from-date').value;
+                calculatorEndKey = document.getElementById('calculator-to-date').value;
+                renderHostDataUI();
+            });
+
+            // Profile Data Modal triggers
+            document.getElementById('btn-close-profile-modal').addEventListener('click', () => {
+                document.getElementById('modal-profile-edit').classList.add('hidden');
+            });
+            document.getElementById('btn-cancel-profile-edit').addEventListener('click', () => {
+                document.getElementById('modal-profile-edit').classList.add('hidden');
+            });
+
+            // Profile Form Submissions
+            document.getElementById('modal-profile-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const oldId = document.getElementById('profile-target-id').value;
+                const newId = document.getElementById('profile-host-id').value.trim();
+                const fullName = document.getElementById('profile-full-name').value.trim();
+                const bankName = document.getElementById('profile-bank-name').value.trim();
+                const bankAccountNo = document.getElementById('profile-bank-account-no').value.trim();
+                const hourlyRate = parseFloat(document.getElementById('profile-rate').value) || 0.00;
+
+                if (!oldId || !newId) return;
+
+                // Validate unique ID if modified
+                if (oldId !== newId) {
+                    const exists = syncedHosts.some(h => h.id === newId);
+                    if (exists) {
+                        document.getElementById('profile-id-error').classList.remove('hidden');
+                        return;
+                    }
+                }
+
+                document.getElementById('profile-id-error').classList.add('hidden');
+
+                try {
+                    const originalHost = syncedHosts.find(h => h.id === oldId);
+
+                    if (oldId !== newId) {
+                        // 1. Create a copy document with the new ID
+                        const newHostRef = doc(db, 'artifacts', appId, 'public', 'data', 'hosts', newId);
+                        await setDoc(newHostRef, {
+                            name: originalHost.name,
+                            fullName: fullName,
+                            bankName: bankName,
+                            bankAccountNo: bankAccountNo,
+                            hourlyRate: hourlyRate
+                        });
+
+                        // 2. Remap any scheduled calendar days referencing old ID
+                        for (const dateKey of Object.keys(syncedSchedules)) {
+                            const sched = syncedSchedules[dateKey];
+                            if (sched.hostId === oldId) {
+                                const schedRef = doc(db, 'artifacts', appId, 'public', 'data', 'schedules', dateKey);
+                                await setDoc(schedRef, {
+                                    ...sched,
+                                    hostId: newId
+                                });
+                            }
+                        }
+
+                        // 3. Remove the old document
+                        const oldHostRef = doc(db, 'artifacts', appId, 'public', 'data', 'hosts', oldId);
+                        await deleteDoc(oldHostRef);
+                    } else {
+                        // Standard update
+                        const hostDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'hosts', oldId);
+                        await setDoc(hostDocRef, {
+                            name: originalHost.name,
+                            fullName: fullName,
+                            bankName: bankName,
+                            bankAccountNo: bankAccountNo,
+                            hourlyRate: hourlyRate
+                        });
+                    }
+
+                    document.getElementById('modal-profile-edit').classList.add('hidden');
+                } catch (err) {
+                    console.error("Failed writing profile document updates:", err);
+                }
+            });
+
+            // Confirmation Dialog for delete bindings
+            document.getElementById('confirm-btn-cancel').addEventListener('click', () => {
+                document.getElementById('modal-confirm').classList.add('hidden');
+                targetHostDeletionId = null;
+            });
+
+            document.getElementById('confirm-btn-delete').addEventListener('click', async () => {
+                if (targetHostDeletionId) {
+                    try {
+                        const hostRef = doc(db, 'artifacts', appId, 'public', 'data', 'hosts', targetHostDeletionId);
+                        await deleteDoc(hostRef);
+                        document.getElementById('modal-confirm').classList.add('hidden');
+                        targetHostDeletionId = null;
+                    } catch (err) {
+                        console.error("Error removing host:", err);
+                    }
+                }
+            });
+        };
+
+        // Month manipulation dispatcher
+        const adjustCurrentMonth = (direction) => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+            renderCalendarSchedules();
+        };
+
+        const renderViews = () => {
+            const views = {
+                'landing': document.getElementById('view-landing'),
+                'schedule': document.getElementById('view-schedule'),
+                'admin-gate': document.getElementById('view-admin-gate'),
+                'admin-dashboard': document.getElementById('view-admin-dashboard')
+            };
+
+            Object.keys(views).forEach(vKey => {
+                if (vKey === activeView) {
+                    views[vKey].classList.remove('hidden');
+                    if (vKey === 'admin-dashboard') {
+                        views[vKey].classList.add('flex');
+                    }
+                } else {
+                    views[vKey].classList.add('hidden');
+                    if (vKey === 'admin-dashboard') {
+                        views[vKey].classList.remove('flex');
+                    }
+                }
+            });
+
+            if (activeView === 'schedule' || activeView === 'admin-dashboard') {
+                renderCalendarSchedules();
+            }
+
+            if (activeView === 'admin-dashboard') {
+                renderAdminTabUI();
+            }
+
+            lucide.createIcons();
+        };
+
+        // Switch panel displays within Admin Layout instantly
+        const renderAdminTabUI = () => {
+            const btnSched = document.getElementById('tab-btn-schedule');
+            const btnHosts = document.getElementById('tab-btn-hosts');
+            const btnData = document.getElementById('tab-btn-data');
+            
+            const panelSched = document.getElementById('panel-schedule');
+            const panelHosts = document.getElementById('panel-hosts');
+            const panelData = document.getElementById('panel-data');
+
+            // Reset classifications
+            const activeClass = "admin-tab-btn flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold transition bg-blue-600 text-white shrink-0";
+            const inactiveClass = "admin-tab-btn flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold transition text-slate-300 hover:bg-slate-800 hover:text-white shrink-0";
+
+            btnSched.className = inactiveClass;
+            btnHosts.className = inactiveClass;
+            btnData.className = inactiveClass;
+
+            panelSched.classList.add('hidden');
+            panelHosts.classList.add('hidden');
+            panelData.classList.add('hidden');
+
+            if (adminTab === 'schedule') {
+                btnSched.className = activeClass;
+                panelSched.classList.remove('hidden');
+                renderCalendarSchedules();
+            } else if (adminTab === 'hosts') {
+                btnHosts.className = activeClass;
+                panelHosts.classList.remove('hidden');
+                renderHostRosterUI();
+            } else if (adminTab === 'data') {
+                btnData.className = activeClass;
+                panelData.classList.remove('hidden');
+                renderHostDataUI();
+            }
+            lucide.createIcons();
+        };
+
+        // Helpers to convert time outputs nicely
+        const formatTimeTo12Hour = (timeString) => {
+            if (!timeString) return "Not Set";
+            const [hoursStr, minutesStr] = timeString.split(':');
+            const hours = parseInt(hoursStr, 10);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const formattedHours = hours % 12 || 12;
+            return `${formattedHours}:${minutesStr} ${ampm}`;
+        };
+
+        // Helper to map Date formats to document keys (YYYY-MM-DD)
+        const generateDateKey = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        // Calculates shift hours accurately including overnight shifts
+        const computeScheduleDuration = (start, end) => {
+            if (!start || !end) return 0;
+            const [sh, sm] = start.split(':').map(Number);
+            const [eh, em] = end.split(':').map(Number);
+            const startDec = sh + (sm / 60);
+            const endDec = eh + (em / 60);
+            
+            if (endDec < startDec) {
+                // Shift crosses midnight (e.g. 11 PM [23:00] to 1 AM [01:00])
+                return (24 - startDec) + endDec;
+            }
+            return endDec - startDec;
+        };
+
+        const renderCalendarSchedules = () => {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            
+            const monthLabelStr = currentCalendarDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+            document.getElementById('current-month-label-pub').innerText = monthLabelStr;
+            document.getElementById('current-month-label-admin').innerText = monthLabelStr;
+
+            const pubGrid = document.getElementById('calendar-grid-pub');
+            const adminGrid = document.getElementById('calendar-grid-admin');
+            
+            pubGrid.innerHTML = '';
+            adminGrid.innerHTML = '';
+
+            const firstDayOfMonth = new Date(year, month, 1);
+            const startDayOfWeekIndex = firstDayOfMonth.getDay(); // Day of week (0-6) index
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Render offset paddings (Desktop Widescreen View only)
+            for (let i = 0; i < startDayOfWeekIndex; i++) {
+                const padPub = document.createElement('div');
+                padPub.className = "hidden lg:block min-h-[220px] bg-slate-100/30 rounded-2xl border border-dashed border-slate-200/50";
+                pubGrid.appendChild(padPub);
+
+                const padAdmin = document.createElement('div');
+                padAdmin.className = "hidden lg:block min-h-[220px] bg-slate-100/30 rounded-2xl border border-dashed border-slate-200/50";
+                adminGrid.appendChild(padAdmin);
+            }
+
+            // Generate Calendar dates loops
+            for (let day = 1; day <= daysInMonth; day++) {
+                const loopDate = new Date(year, month, day);
+                const isSaturdayValue = loopDate.getDay() === 6; // Saturday
+                const dateKey = generateDateKey(loopDate);
+                const dayNameString = loopDate.toLocaleString('default', { weekday: 'long' });
+                const formattedLabelDate = `${day} ${loopDate.toLocaleString('default', { month: 'short' })}`;
+
+                const liveConfig = syncedSchedules[dateKey] || {
+                    hostId: '',
+                    hostName: '',
+                    startTime: '23:00',
+                    endTime: '01:00'
+                };
+
+                let resolvedHostName = "Open Slot";
+                if (liveConfig.hostId) {
+                    const hostObj = syncedHosts.find(h => h.id === liveConfig.hostId);
+                    resolvedHostName = hostObj ? hostObj.name : (liveConfig.hostName || "Unassigned Host");
+                }
+
+                const pubCell = document.createElement('div');
+                pubCell.className = `bg-white p-4 rounded-2xl border-2 transition-all flex flex-col justify-between shadow-sm min-h-[220px] h-full ${
+                    isSaturdayValue 
+                    ? 'border-slate-100 bg-slate-50/50 opacity-60' 
+                    : liveConfig.hostId 
+                    ? 'border-blue-200 bg-blue-50/10 hover:border-brand-800 hover:shadow-md' 
+                    : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
+                }`;
+
+                let contentPubHtml = `
+                    <div class="space-y-4 flex-grow flex flex-col justify-between">
+                        <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                            <span class="text-sm font-black text-brand-900 bg-blue-100 px-2.5 py-1 rounded-lg shrink-0">${formattedLabelDate}</span>
+                            <span class="text-xs font-black text-slate-700 uppercase tracking-wide truncate">${dayNameString.substring(0, 3)}</span>
+                        </div>
+                `;
+
+                if (isSaturdayValue) {
+                    contentPubHtml += `
+                        <div class="flex-grow flex flex-col items-center justify-center py-6">
+                            <span class="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-100/80 px-3 py-1.5 rounded-full font-black uppercase tracking-wider">
+                                <i data-lucide="moon-star" class="w-3.5 h-3.5"></i>
+                                No Live
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    const hasLiveValue = !!liveConfig.hostId;
+                    contentPubHtml += `
+                        <div class="space-y-1.5 min-w-0 flex-grow">
+                            <p class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Host Assigned</p>
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="w-5 h-5 rounded bg-slate-100 ${hasLiveValue ? 'text-brand-800 bg-blue-100' : 'text-slate-400'} flex items-center justify-center shrink-0">
+                                    <i data-lucide="${hasLiveValue ? 'radio' : 'user-x'}" class="w-3 h-3 ${hasLiveValue ? 'animate-pulse' : ''}"></i>
+                                </span>
+                                <p class="text-[12px] font-bold ${hasLiveValue ? 'text-brand-900' : 'text-slate-400 italic'} break-words whitespace-normal leading-tight w-full" style="word-break: break-all;">
+                                    ${resolvedHostName}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 flex flex-col gap-1 text-[11px] shrink-0 mt-auto">
+                            <span class="text-slate-400 font-extrabold uppercase tracking-wider">Live Frame</span>
+                            <div class="flex flex-wrap items-center gap-1 font-black text-brand-800 bg-blue-50/70 p-1.5 rounded-lg w-full justify-center">
+                                <span class="bg-white px-1.5 py-0.5 rounded shadow-sm shrink-0">${formatTimeTo12Hour(liveConfig.startTime)}</span>
+                                <span class="text-slate-400 font-normal">to</span>
+                                <span class="bg-white px-1.5 py-0.5 rounded shadow-sm shrink-0">${formatTimeTo12Hour(liveConfig.endTime)}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                contentPubHtml += `</div>`;
+                pubCell.innerHTML = contentPubHtml;
+                pubGrid.appendChild(pubCell);
+
+
+                // Admin Cell Grid
+                const adminCell = document.createElement('div');
+                adminCell.className = `bg-white p-4 rounded-2xl border-2 transition-all flex flex-col justify-between shadow-sm min-h-[220px] h-full ${
+                    isSaturdayValue 
+                    ? 'border-slate-100 bg-slate-100/50 opacity-50' 
+                    : 'border-slate-200 hover:border-brand-800 hover:shadow-md cursor-pointer'
+                }`;
+
+                let contentAdminHtml = `
+                    <div class="space-y-4 flex-grow flex flex-col justify-between">
+                        <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                            <span class="text-sm font-black text-brand-900 bg-blue-100 px-2.5 py-1 rounded-lg shrink-0">${formattedLabelDate}</span>
+                            <span class="text-xs font-black text-slate-700 uppercase tracking-wide truncate">${dayNameString.substring(0, 3)}</span>
+                        </div>
+                `;
+
+                if (isSaturdayValue) {
+                    contentAdminHtml += `
+                        <div class="flex-grow flex flex-col items-center justify-center py-6">
+                            <span class="text-xs text-slate-400 font-black uppercase tracking-wider">No Broadcast</span>
+                        </div>
+                    `;
+                } else {
+                    const hasLiveValue = !!liveConfig.hostId;
+                    contentAdminHtml += `
+                        <div class="space-y-1.5 min-w-0 flex-grow">
+                            <p class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Host Assigned</p>
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="w-5 h-5 rounded bg-slate-100 ${hasLiveValue ? 'text-brand-800 bg-blue-100' : 'text-slate-400'} flex items-center justify-center shrink-0">
+                                    <i data-lucide="${hasLiveValue ? 'radio' : 'user-plus'}" class="w-3 h-3"></i>
+                                </span>
+                                <p class="text-[12px] font-bold ${hasLiveValue ? 'text-brand-900' : 'text-slate-400 italic'} break-words whitespace-normal leading-tight w-full" style="word-break: break-all;">
+                                    ${resolvedHostName}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 flex flex-col gap-1 text-[11px] shrink-0 mt-auto mb-2">
+                            <span class="text-slate-400 font-extrabold uppercase tracking-wider">Live Frame</span>
+                            <div class="flex flex-wrap items-center gap-1 font-black text-brand-800 bg-blue-50/70 p-1.5 rounded-lg w-full justify-center">
+                                <span class="bg-white px-1.5 py-0.5 rounded shadow-sm shrink-0">${formatTimeTo12Hour(liveConfig.startTime)}</span>
+                                <span class="text-slate-400 font-normal">to</span>
+                                <span class="bg-white px-1.5 py-0.5 rounded shadow-sm shrink-0">${formatTimeTo12Hour(liveConfig.endTime)}</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 shrink-0 mt-auto">
+                            <span class="font-black text-brand-800 bg-slate-100 px-2 py-1.5 rounded-xl w-full text-center hover:bg-slate-200 transition flex items-center justify-center gap-1 text-[11px]">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Schedule
+                            </span>
+                        </div>
+                    `;
+                }
+
+                contentAdminHtml += `</div>`;
+                adminCell.innerHTML = contentAdminHtml;
+
+                if (!isSaturdayValue) {
+                    adminCell.addEventListener('click', () => {
+                        openScheduleEditorModal(dateKey, loopDate, liveConfig);
+                    });
+                }
+
+                adminGrid.appendChild(adminCell);
+            }
+
+            lucide.createIcons();
+        };
+
+        const openScheduleEditorModal = (dateKey, dateObj, currentConfig) => {
+            const labelDate = `${dateObj.getDate()} ${dateObj.toLocaleString('default', { month: 'long', year: 'numeric' })} (${dateObj.toLocaleString('default', { weekday: 'long' })})`;
+            
+            document.getElementById('modal-date-label').innerText = labelDate;
+            document.getElementById('modal-target-date').value = dateKey;
+            document.getElementById('modal-host-select').value = currentConfig.hostId || "";
+            document.getElementById('modal-start-time').value = currentConfig.startTime || "23:00";
+            document.getElementById('modal-end-time').value = currentConfig.endTime || "01:00";
+
+            document.getElementById('modal-schedule').classList.remove('hidden');
+        };
+
+        const updateHostDropdownOptions = () => {
+            const selectDropdown = document.getElementById('modal-host-select');
+            selectDropdown.innerHTML = '<option value="">Unassigned (Open Slot)</option>';
+
+            syncedHosts.forEach(host => {
+                const opt = document.createElement('option');
+                opt.value = host.id;
+                opt.innerText = host.name;
+                selectDropdown.appendChild(opt);
+            });
+        };
+
+        const renderHostRosterUI = () => {
+            const listContainer = document.getElementById('host-roster-list');
+            const counterElement = document.getElementById('host-counter');
+
+            listContainer.innerHTML = '';
+            counterElement.innerText = `${syncedHosts.length} ${syncedHosts.length === 1 ? 'Host' : 'Hosts'}`;
+
+            if (syncedHosts.length === 0) {
+                listContainer.innerHTML = `<li class="p-8 text-center text-slate-400 text-sm">No hosts registered in master roster. Register a new host above!</li>`;
+                return;
+            }
+
+            syncedHosts.forEach((host) => {
+                const li = document.createElement('li');
+                li.className = "flex items-center justify-between p-4 hover:bg-slate-50 transition";
+
+                li.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-slate-100 text-brand-900 rounded-xl flex items-center justify-center font-black text-sm">
+                            ${host.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <span class="host-display-name text-sm font-black text-brand-900" id="host-name-txt-${host.id}">${host.name}</span>
+                            <div class="host-edit-input-container hidden flex items-center gap-2" id="host-edit-box-${host.id}">
+                                <input type="text" id="host-edit-input-${host.id}" value="${host.name}" class="px-2 py-1 bg-white border border-slate-300 rounded text-sm font-bold text-brand-900 focus:outline-none focus:ring-1 focus:ring-brand-800">
+                                <button class="btn-save-edit text-emerald-600 hover:text-emerald-800 p-1" data-id="${host.id}">
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                </button>
+                                <button class="btn-cancel-edit text-slate-400 hover:text-slate-600 p-1" data-id="${host.id}">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button class="btn-trigger-edit-mode text-slate-400 hover:text-brand-800 hover:bg-slate-100 p-2 rounded-lg transition" data-id="${host.id}" id="btn-edit-mode-${host.id}">
+                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        </button>
+                        <button class="btn-trigger-delete text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition" data-id="${host.id}">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+
+                li.querySelector('.btn-trigger-edit-mode').addEventListener('click', () => {
+                    toggleHostEditMode(host.id, true);
+                });
+
+                li.querySelector('.btn-cancel-edit')?.addEventListener('click', () => {
+                    toggleHostEditMode(host.id, false);
+                });
+
+                li.querySelector('.btn-save-edit')?.addEventListener('click', async () => {
+                    const inputField = document.getElementById(`host-edit-input-${host.id}`);
+                    const newName = inputField.value.trim();
+                    if (!newName) return;
+
+                    const exists = syncedHosts.some(h => h.id !== host.id && h.name.toLowerCase() === newName.toLowerCase());
+                    if (exists) {
+                        const alertContainer = document.getElementById('master-list-alert');
+                        const alertText = document.getElementById('master-list-alert-text');
+                        alertText.innerText = `Roster already contains host named "${newName}"!`;
+                        alertContainer.classList.remove('hidden');
+                        return;
+                    }
+
+                    try {
+                        const hostDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'hosts', host.id);
+                        await setDoc(hostDocRef, { 
+                            name: newName,
+                            fullName: host.fullName === host.name ? newName : host.fullName,
+                            bankAccount: host.bankAccount,
+                            hourlyRate: host.hourlyRate
+                        });
+                        toggleHostEditMode(host.id, false);
+                        document.getElementById('master-list-alert').classList.add('hidden');
+                    } catch (err) {
+                        console.error("Failed saving name update:", err);
+                    }
+                });
+
+                li.querySelector('.btn-trigger-delete').addEventListener('click', () => {
+                    targetHostDeletionId = host.id;
+                    document.getElementById('confirm-host-name').innerText = host.name;
+                    document.getElementById('modal-confirm').classList.remove('hidden');
+                });
+
+                listContainer.appendChild(li);
+            });
+
+            lucide.createIcons();
+        };
+
+        const toggleHostEditMode = (hostId, isEditing) => {
+            const textEl = document.getElementById(`host-name-txt-${hostId}`);
+            const editBox = document.getElementById(`host-edit-box-${hostId}`);
+            const editBtn = document.getElementById(`btn-edit-mode-${hostId}`);
+
+            if (isEditing) {
+                textEl.classList.add('hidden');
+                editBox.classList.remove('hidden');
+                editBtn.classList.add('hidden');
+            } else {
+                textEl.classList.remove('hidden');
+                editBox.classList.add('hidden');
+                editBtn.classList.remove('hidden');
+            }
+        };
+
+        const renderHostDataUI = () => {
+            const tableBody = document.getElementById('data-table-body');
+            tableBody.innerHTML = '';
+
+            if (syncedHosts.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="p-8 text-center text-slate-400 font-medium">
+                            No hosts available. Register hosts inside the Master List to setup profiling!
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Calculate duration totals for each host within configured date parameters
+            const hostsWorkMap = {};
+            syncedHosts.forEach(h => {
+                hostsWorkMap[h.id] = 0;
+            });
+
+            // Iterate schedule items
+            Object.keys(syncedSchedules).forEach(dateKey => {
+                const scheduleDate = new Date(dateKey + "T00:00:00");
+                const fromBound = calculatorStartKey ? new Date(calculatorStartKey + "T00:00:00") : null;
+                const toBound = calculatorEndKey ? new Date(calculatorEndKey + "T00:00:00") : null;
+
+                let isPass = true;
+                if (fromBound && scheduleDate < fromBound) isPass = false;
+                if (toBound && scheduleDate > toBound) isPass = false;
+
+                if (isPass) {
+                    const item = syncedSchedules[dateKey];
+                    if (item.hostId && hostsWorkMap[item.hostId] !== undefined) {
+                        const shiftHours = computeScheduleDuration(item.startTime, item.endTime);
+                        hostsWorkMap[item.hostId] += shiftHours;
+                    }
+                }
+            });
+
+            // Map each row
+            syncedHosts.forEach(host => {
+                const totalHours = hostsWorkMap[host.id] || 0;
+                const calculatedEarnings = totalHours * host.hourlyRate;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+                const bankDetailsHtml = (host.bankName || host.bankAccountNo)
+                    ? `<div>
+                         <span class="font-bold text-slate-900">${host.bankName || 'N/A'}</span>
+                         <div class="text-xs text-slate-500">${host.bankAccountNo || 'N/A'}</div>
+                       </div>`
+                    : '<span class="text-slate-300 italic">Not set</span>';
+
+                tr.innerHTML = `
+                    <td class="p-4 font-black text-brand-900">${host.name}</td>
+                    <td class="p-4"><code class="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded break-all">${host.id}</code></td>
+                    <td class="p-4 text-slate-700">${host.fullName || '<span class="text-slate-300 italic">Not set</span>'}</td>
+                    <td class="p-4 text-slate-700">${bankDetailsHtml}</td>
+                    <td class="p-4 text-brand-800 font-bold">RM ${host.hourlyRate.toFixed(2)}/hr</td>
+                    <td class="p-4 text-center font-extrabold bg-blue-50/30 text-brand-900">${totalHours.toFixed(2)} hrs</td>
+                    <td class="p-4 text-right font-black text-emerald-600 bg-blue-100/10">RM ${calculatedEarnings.toFixed(2)}</td>
+                    <td class="p-4 text-center">
+                        <button class="btn-edit-profile-profile bg-slate-100 hover:bg-brand-800 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 mx-auto" data-id="${host.id}">
+                            <i data-lucide="edit" class="w-3.5 h-3.5"></i> Edit Profile
+                        </button>
+                    </td>
+                `;
+
+                // Profile editor modal triggers
+                tr.querySelector('.btn-edit-profile-profile').addEventListener('click', () => {
+                    openProfileEditorModal(host);
+                });
+
+                tableBody.appendChild(tr);
+            });
+
+            lucide.createIcons();
+        };
+
+        const openProfileEditorModal = (host) => {
+            document.getElementById('profile-target-id').value = host.id;
+            document.getElementById('profile-host-id').value = host.id;
+            document.getElementById('profile-short-name').value = host.name;
+            document.getElementById('profile-full-name').value = host.fullName || "";
+            document.getElementById('profile-bank-name').value = host.bankName || "";
+            document.getElementById('profile-bank-account-no').value = host.bankAccountNo || "";
+            document.getElementById('profile-rate').value = host.hourlyRate || 15.00;
+            document.getElementById('profile-id-error').classList.add('hidden');
+
+            document.getElementById('modal-profile-edit').classList.remove('hidden');
+        };
+
+    </script>
 </body>
 </html>
