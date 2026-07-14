@@ -186,6 +186,43 @@
     border-radius:8px;
   }
   .sync-dot{width:7px;height:7px;border-radius:50%; background:#3DDC84;}
+  .sync-dot.pending{background:#E8B84B; animation:pulse-amber 1.1s infinite;}
+  .sync-dot.bad{background:var(--accent-live);}
+  @keyframes pulse-amber{
+    0%{box-shadow:0 0 0 0 rgba(232,184,75,0.5);}
+    70%{box-shadow:0 0 0 7px rgba(232,184,75,0);}
+    100%{box-shadow:0 0 0 0 rgba(232,184,75,0);}
+  }
+  .sync-error-banner{
+    background:rgba(254,44,85,0.08);
+    border:1px solid rgba(254,44,85,0.35);
+    color:#FFB4C4;
+    border-radius:8px;
+    padding:10px 14px;
+    font-size:12.5px;
+    line-height:1.5;
+    margin-bottom:18px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .sync-error-banner code{
+    background:rgba(0,0,0,0.25);
+    padding:1px 5px;
+    border-radius:4px;
+    font-size:11.5px;
+  }
+  .retry-btn{
+    flex-shrink:0;
+    background:none;
+    border:1px solid rgba(254,44,85,0.5);
+    color:#FFB4C4;
+    padding:5px 10px;
+    border-radius:6px;
+    font-size:11.5px;
+  }
+  .retry-btn:hover{background:rgba(254,44,85,0.15);}
   .exit-btn{
     background:none; border:1px solid var(--border); color:var(--text-muted);
     padding:8px 12px; border-radius:8px; font-size:12.5px;
@@ -365,8 +402,26 @@
 
 <div id="root"></div>
 
-<script type="text/javascript">
-const STORAGE_KEY = "live-host-schedule-v1";
+<script type="module">
+import { initializeApp } from "https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.2/firebase-app.js";
+import { getDatabase, ref, set, onValue, runTransaction } from "https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDQ9hs030NaJy2NoznP1bCSNa-eIRs4Kkg",
+  authDomain: "liveschedule-f6036.firebaseapp.com",
+  databaseURL: "https://liveschedule-f6036-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "liveschedule-f6036",
+  storageBucket: "liveschedule-f6036.firebasestorage.app",
+  messagingSenderId: "424904123728",
+  appId: "1:424904123728:web:3d2213361a78b2147b3855"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getDatabase(firebaseApp);
+const scheduleRef = ref(db, "liveHostSchedule");
+const hostsRef = ref(db, "liveHostSchedule/hosts");
+function assignmentRef(dateKey){ return ref(db, "liveHostSchedule/assignments/" + dateKey); }
+
 const ADMIN_PASSWORD = "NAN2221#";
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"]; // cycle: Sun -> Fri
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -380,7 +435,27 @@ let state = {
   synced: false,
   newHostName: "",
   adminPage: "schedule",   // schedule | masters (admin only)
+  dbReady: false,
+  connectionState: "connecting",  // connecting | connected | error
+  saveState: "idle",              // idle | saving | saved | error
+  syncError: "",
 };
+
+function syncStatusHTML(){
+  if(state.connectionState === "error"){
+    return `<span class="sync-dot bad"></span>Connection failed`;
+  }
+  if(state.connectionState === "connecting"){
+    return `<span class="sync-dot pending"></span>Connecting…`;
+  }
+  if(state.saveState === "saving"){
+    return `<span class="sync-dot pending"></span>Saving…`;
+  }
+  if(state.saveState === "error"){
+    return `<span class="sync-dot bad"></span>Save failed`;
+  }
+  return `<span class="sync-dot"></span>Synced`;
+}
 
 function pad(n){ return n < 10 ? "0"+n : ""+n; }
 function toKey(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
@@ -537,6 +612,17 @@ function renderMain(){
         : "Changes sync automatically across all devices and users. Editing one date only affects that date — other weeks stay as they are.")
     : "Changes sync automatically across all devices and users.";
 
+  const hasError = state.connectionState === "error" || state.saveState === "error";
+  const errorBanner = hasError ? `
+    <div class="sync-error-banner">
+      <div>
+        <strong>${state.connectionState === "error" ? "Could not connect to the database." : "Your last change did not save."}</strong><br/>
+        ${state.syncError ? `<code>${escapeHtml(state.syncError)}</code>` : "Unknown error."}
+        ${/permission/i.test(state.syncError||"") ? '<br/>This usually means the Firebase Database Rules are blocking read/write access.' : ''}
+      </div>
+      <button class="retry-btn" data-action="retry-sync">Retry</button>
+    </div>` : "";
+
   return `
   <div class="app-shell">
     <div class="wrap">
@@ -548,10 +634,12 @@ function renderMain(){
           </h1>
         </div>
         <div class="header-right">
-          <div class="sync-status"><span class="sync-dot"></span>${state.synced ? 'Synced' : 'Syncing…'}</div>
+          <div class="sync-status">${syncStatusHTML()}</div>
           <button class="exit-btn" data-action="exit-to-select">Exit</button>
         </div>
       </div>
+
+      ${errorBanner}
 
       ${tabNav}
 
@@ -576,7 +664,7 @@ function attachHandlers(){
         const val = e.target.value;
         if(val) state.data.assignments[date] = val;
         else delete state.data.assignments[date];
-        await saveData();
+        await saveAssignment(date, val || null);
       });
       return;
     }
@@ -584,8 +672,6 @@ function attachHandlers(){
       if(action === "go-view"){
         state.isAdmin = false;
         state.screen = "main";
-        state.synced = false;
-        await loadData();
         render();
       } else if(action === "go-admin-pass"){
         state.screen = "admin-pass";
@@ -602,7 +688,6 @@ function attachHandlers(){
           state.screen = "main";
           state.adminPage = "schedule";
           state.passError = "";
-          await loadData();
           render();
         } else {
           state.passError = "Incorrect password. Try again.";
@@ -636,13 +721,18 @@ function attachHandlers(){
           input.value = "";
           return;
         }
-        state.data.hosts.push(name);
         input.value = "";
-        await saveData();
+        await addHostRemote(name);
       } else if(action === "remove-host"){
         const host = el.getAttribute("data-host");
-        state.data.hosts = state.data.hosts.filter(h => h !== host);
-        await saveData();
+        await removeHostRemote(host);
+      } else if(action === "retry-sync"){
+        if(lastFailedRetry){
+          await lastFailedRetry();
+        } else {
+          state.connectionState = "connecting";
+          render();
+        }
       }
     });
   });
@@ -662,66 +752,87 @@ function attachHandlers(){
   }
 }
 
-async function loadData(){
-  try{
-    const result = await window.storage.get(STORAGE_KEY, true);
-    if(result && result.value){
-      state.data = JSON.parse(result.value);
-      if(!state.data.hosts) state.data.hosts = [];
-      if(!state.data.assignments) state.data.assignments = {};
-    } else {
-      state.data = { hosts: [], assignments: {} };
-    }
-    state.synced = true;
-  } catch(err){
-    // key doesn't exist yet — initialize
-    state.data = { hosts: [], assignments: {} };
-    try{
-      await window.storage.set(STORAGE_KEY, JSON.stringify(state.data), true);
-      state.synced = true;
-    } catch(e2){
-      state.synced = false;
-    }
-  }
-}
+let lastFailedRetry = null;
 
-async function saveData(){
+async function saveAssignment(dateKey, hostNameOrNull){
+  state.saveState = "saving";
+  render();
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(state.data), true);
-    state.synced = true;
+    await set(assignmentRef(dateKey), hostNameOrNull);
+    state.saveState = "saved";
+    state.syncError = "";
+    lastFailedRetry = null;
   } catch(err){
-    state.synced = false;
+    state.saveState = "error";
+    state.syncError = (err && err.message) ? err.message : String(err);
+    lastFailedRetry = () => saveAssignment(dateKey, hostNameOrNull);
+    console.error("Firebase assignment write failed:", err);
   }
   render();
 }
 
-// background polling so all devices reflect the latest shared state
-async function pollForUpdates(){
-  if(state.screen !== "main") return;
+async function addHostRemote(name){
+  state.saveState = "saving";
+  render();
   try{
-    const result = await window.storage.get(STORAGE_KEY, true);
-    if(result && result.value){
-      const fresh = JSON.parse(result.value);
-      if(JSON.stringify(fresh) !== JSON.stringify(state.data)){
-        state.data = fresh;
-        state.synced = true;
-        render();
-      } else if(!state.synced){
-        state.synced = true;
-        render();
-      }
-    }
-  } catch(err){ /* ignore transient errors */ }
+    // Transaction: reads the CURRENT server value at write time and merges,
+    // so two admins adding hosts at the same moment don't overwrite each other.
+    await runTransaction(hostsRef, (current)=>{
+      const list = Array.isArray(current) ? current.slice() : [];
+      if(!list.includes(name)) list.push(name);
+      return list;
+    });
+    state.saveState = "saved";
+    state.syncError = "";
+    lastFailedRetry = null;
+  } catch(err){
+    state.saveState = "error";
+    state.syncError = (err && err.message) ? err.message : String(err);
+    lastFailedRetry = () => addHostRemote(name);
+    console.error("Firebase host add failed:", err);
+  }
+  render();
 }
 
-setInterval(pollForUpdates, 2000);
+async function removeHostRemote(name){
+  state.saveState = "saving";
+  render();
+  try{
+    await runTransaction(hostsRef, (current)=>{
+      const list = Array.isArray(current) ? current.slice() : [];
+      return list.filter(h => h !== name);
+    });
+    state.saveState = "saved";
+    state.syncError = "";
+    lastFailedRetry = null;
+  } catch(err){
+    state.saveState = "error";
+    state.syncError = (err && err.message) ? err.message : String(err);
+    lastFailedRetry = () => removeHostRemote(name);
+    console.error("Firebase host remove failed:", err);
+  }
+  render();
+}
 
-// refresh immediately the moment the tab/window regains focus,
-// instead of waiting for the next poll tick
-document.addEventListener("visibilitychange", ()=>{
-  if(document.visibilityState === "visible") pollForUpdates();
+// Real-time listener: fires immediately on connect, and again the instant
+// any admin, on any device, writes a change. No polling needed.
+onValue(scheduleRef, (snapshot)=>{
+  const val = snapshot.val();
+  state.data = (val && typeof val === "object") ? {
+    hosts: Array.isArray(val.hosts) ? val.hosts : [],
+    assignments: (val.assignments && typeof val.assignments === "object") ? val.assignments : {},
+  } : { hosts: [], assignments: {} };
+  state.dbReady = true;
+  state.connectionState = "connected";
+  state.syncError = "";
+  if(state.saveState !== "saving") state.saveState = "idle";
+  if(state.screen === "main") render();
+}, (error)=>{
+  state.connectionState = "error";
+  state.syncError = (error && error.message) ? error.message : String(error);
+  console.error("Firebase read failed:", error);
+  if(state.screen === "main") render();
 });
-window.addEventListener("focus", pollForUpdates);
 
 render();
 </script>
