@@ -471,20 +471,11 @@
 
 <div id="root"></div>
 
-<!-- ES Module Import Map for GitHub Pages Compatibility -->
-<script type="importmap">
-  {
-    "imports": {
-      "firebase/app": "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js",
-      "firebase/database": "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js"
-    }
-  }
-</script>
+<!-- Standard Browser Compatibility Loading Scripts -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 
-<script type="module">
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, onValue, runTransaction } from "firebase/database";
-
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyDQ9hs030NaJy2NoznP1bCSNa-eIRs4Kkg",
   authDomain: "liveschedule-f6036.firebaseapp.com",
@@ -495,11 +486,11 @@ const firebaseConfig = {
   appId: "1:424904123728:web:3d2213361a78b2147b3855"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getDatabase(firebaseApp);
-const scheduleRef = ref(db, "liveHostSchedule");
-const hostsRef = ref(db, "liveHostSchedule/hosts");
-function assignmentRef(dateKey){ return ref(db, "liveHostSchedule/assignments/" + dateKey); }
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const scheduleRef = db.ref("liveHostSchedule");
+const hostsRef = db.ref("liveHostSchedule/hosts");
+function assignmentRef(dateKey){ return db.ref("liveHostSchedule/assignments/" + dateKey); }
 
 const ADMIN_PASSWORD = "NAN2221#";
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"]; 
@@ -909,7 +900,7 @@ async function saveAssignment(dateKey, payloadOrNull){
   state.saveState = "saving";
   render();
   try{
-    await set(assignmentRef(dateKey), payloadOrNull);
+    await assignmentRef(dateKey).set(payloadOrNull);
     state.saveState = "saved";
     state.syncError = "";
     lastFailedRetry = null;
@@ -926,7 +917,7 @@ async function addHostRemote(name){
   state.saveState = "saving";
   render();
   try{
-    await runTransaction(hostsRef, (current)=>{
+    await hostsRef.transaction((current)=>{
       const list = Array.isArray(current) ? current.slice() : [];
       if(!list.includes(name)) list.push(name);
       return list;
@@ -947,7 +938,7 @@ async function removeHostRemote(name){
   state.saveState = "saving";
   render();
   try{
-    await runTransaction(hostsRef, (current)=>{
+    await hostsRef.transaction((current)=>{
       const list = Array.isArray(current) ? current.slice() : [];
       return list.filter(h => h !== name);
     });
@@ -963,7 +954,7 @@ async function removeHostRemote(name){
   render();
 }
 
-onValue(scheduleRef, (snapshot)=>{
+scheduleRef.on("value", (snapshot)=>{
   const val = snapshot.val();
   state.data = (val && typeof val === "object") ? {
     hosts: Array.isArray(val.hosts) ? val.hosts : [],
